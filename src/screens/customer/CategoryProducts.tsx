@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
-import { mockProducts } from '../../services/mockData';
+import { mockProducts, mockStores, mockOffers } from '../../services/mockData';
+import { useAppStore } from '../../store';
 import GradientAppHeader from '../../components/GradientAppHeader';
 import PicklistModal, { PicklistItem } from '../../components/PicklistModal';
+import AddToCartBottomSheet from '../../components/AddToCartBottomSheet';
 
 const SORT_OPTIONS: PicklistItem[] = [
   { label: 'Relevance (Recommended)', value: 'relevance', subLabel: 'Best match for your construction requirement' },
@@ -48,6 +50,7 @@ const FILTER_OPTIONS: PicklistItem[] = [
 export default function CategoryProducts({ route, navigation }: any) {
   const categoryName = route?.params?.category || 'Structural Materials';
   const subCategoryName = route?.params?.sub || 'Cement';
+  const { cart, addToCart, updateCartQuantity, removeFromCart } = useAppStore();
 
   // Active Filter Picklist Modals
   const [activePicklist, setActivePicklist] = useState<'sort' | 'brand' | 'pack_size' | 'filter' | null>(null);
@@ -57,6 +60,8 @@ export default function CategoryProducts({ route, navigation }: any) {
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [selectedPackSize, setSelectedPackSize] = useState('all');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedProductName, setSelectedProductName] = useState('');
+  const [showAddSheet, setShowAddSheet] = useState(false);
 
   // Filter and Sort Products
   let filteredProducts = mockProducts.filter((p) => {
@@ -93,6 +98,46 @@ export default function CategoryProducts({ route, navigation }: any) {
     const item = FILTER_OPTIONS.find((s) => s.value === selectedFilter);
     return item && selectedFilter !== 'all' ? item.label.split(' ')[0] + ' ▾' : 'Filter ▾';
   };
+
+  const getProductQuantity = (productId: string) =>
+    cart
+      .filter((item) => item.product.id === productId)
+      .reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleAddProduct = (product: (typeof mockProducts)[number], price: number) => {
+    const store = mockStores[0];
+    const offer =
+      mockOffers.find((o) => o.productId === product.id && o.retailerId === store.id) || {
+        id: `offer-${product.id}-${store.id}`,
+        productId: product.id,
+        retailerId: store.id,
+        price,
+        stock: 500,
+        isAvailable: true,
+        estimatedDeliveryMins: 30,
+      };
+
+    addToCart({
+      id: `cart-${offer.id}-${Date.now()}`,
+      offer,
+      product,
+      retailer: store,
+      quantity: 1,
+    });
+    setSelectedProductName(product.name);
+    setShowAddSheet(true);
+  };
+
+  const handleDecreaseProduct = (product: (typeof mockProducts)[number]) => {
+    const matching = cart.filter((item) => item.product.id === product.id);
+    if (!matching.length) return;
+
+    const item = matching[0];
+    if (item.quantity <= 1) removeFromCart(item.id);
+    else updateCartQuantity(item.id, item.quantity - 1);
+  };
+
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <View style={styles.root}>
@@ -160,60 +205,93 @@ export default function CategoryProducts({ route, navigation }: any) {
 
       {/* Products List */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {filteredProducts.map((product) => {
-          const price = product.name.includes('UltraTech')
-            ? 410
-            : product.name.includes('Ramco')
-            ? 395
-            : product.name.includes('ACC')
-            ? 405
-            : product.name.includes('Ambuja')
-            ? 400
-            : product.name.includes('Steel')
-            ? 680
-            : 340;
+        <View style={styles.productGrid}>
+          {filteredProducts.map((product) => {
+            const price = product.name.includes('UltraTech')
+              ? 410
+              : product.name.includes('Ramco')
+              ? 395
+              : product.name.includes('ACC')
+              ? 405
+              : product.name.includes('Ambuja')
+              ? 400
+              : product.name.includes('Steel')
+              ? 680
+              : 340;
+            const quantity = getProductQuantity(product.id);
 
-          return (
-            <TouchableOpacity
-              key={product.id}
-              style={styles.productCard}
-              onPress={() => navigation.navigate('ProductDetail', { productId: product.id })}
-              activeOpacity={0.88}
-            >
-              <View style={styles.productImageBox}>
-                <Text style={styles.productEmoji}>
-                  {product.name.includes('Cement') ? '🏗️'
-                    : product.name.includes('Steel') ? '🔩'
-                    : product.name.includes('Sand') ? '⏳'
-                    : product.name.includes('Brick') ? '🧱'
-                    : product.name.includes('Paint') ? '🎨'
-                    : '📦'}
-                </Text>
-              </View>
-
-              <View style={styles.productInfo}>
-                <Text style={styles.productTitle} numberOfLines={2}>{product.name}</Text>
-                <Text style={styles.productMeta}>Brand: {product.brand} • {product.unit}</Text>
-                <View style={styles.ratingRow}>
-                  <Text style={styles.ratingText}>★ 4.6</Text>
-                  <Text style={styles.soldText}>1.1k+ sold</Text>
-                </View>
-                <Text style={styles.productPrice}>₹{price} <Text style={styles.unitText}>/ {product.unit.split(' ')[0]}</Text></Text>
-              </View>
-
+            return (
               <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => navigation.navigate('StoreCompare', { productId: product.id, productName: product.name })}
-                activeOpacity={0.85}
+                key={product.id}
+                style={styles.productCard}
+                onPress={() => navigation.navigate('ProductDetail', { productId: product.id })}
+                activeOpacity={0.88}
               >
-                <Text style={styles.addButtonText}>+ ADD</Text>
+                <View style={styles.cardTopRow}>
+                  <View style={styles.productImageBox}>
+                    <Text style={styles.productEmoji}>
+                      {product.name.includes('Cement') ? '🏗️'
+                        : product.name.includes('Steel') ? '🔩'
+                        : product.name.includes('Sand') ? '⏳'
+                        : product.name.includes('Brick') ? '🧱'
+                        : product.name.includes('Paint') ? '🎨'
+                        : '📦'}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.iconButton}
+                    onPress={() => navigation.navigate('StoreCompare', { productId: product.id, productName: product.name })}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.iconButtonText}>▣</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.productTitle} numberOfLines={2}>{product.name}</Text>
+                <Text style={styles.productMeta}>{product.unit}</Text>
+                <Text style={styles.productPrice}>₹{price}</Text>
+
+                <View style={styles.cardBottomRow}>
+                  <TouchableOpacity
+                    style={styles.stepBtn}
+                    activeOpacity={0.8}
+                    onPress={() => handleDecreaseProduct(product)}
+                  >
+                    <Text style={styles.stepBtnText}>−</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.stepQty}>{quantity}</Text>
+                  <TouchableOpacity
+                    style={styles.stepBtn}
+                    activeOpacity={0.8}
+                    onPress={() => handleAddProduct(product, price)}
+                  >
+                    <Text style={styles.stepBtnText}>+</Text>
+                  </TouchableOpacity>
+                </View>
               </TouchableOpacity>
-            </TouchableOpacity>
-          );
-        })}
+            );
+          })}
+        </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <AddToCartBottomSheet
+        visible={showAddSheet}
+        itemName={selectedProductName}
+        itemCount={cart.length}
+        totalQuantity={totalItems}
+        onClose={() => setShowAddSheet(false)}
+        onContinue={() => {
+          setShowAddSheet(false);
+          navigation.navigate('Cart');
+        }}
+        onViewCart={() => {
+          setShowAddSheet(false);
+          navigation.navigate('Cart');
+        }}
+      />
 
       {/* ── 1. Sort Picklist Modal ── */}
       <PicklistModal
@@ -306,85 +384,101 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.md,
-    gap: spacing.md,
+  },
+  productGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: spacing.md,
   },
   productCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: '48%',
     backgroundColor: colors.surface,
     borderRadius: radii.xl,
-    padding: spacing.md,
+    padding: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: spacing.sm + 2,
     ...shadows.sm,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
   },
   productImageBox: {
     width: 72,
     height: 72,
     borderRadius: radii.lg,
-    backgroundColor: colors.background,
+    backgroundColor: '#F3F3F3',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.borderLight,
   },
   productEmoji: {
-    fontSize: 34,
+    fontSize: 30,
   },
-  productInfo: {
-    flex: 1,
-    gap: 2,
+  iconButton: {
+    width: 24,
+    height: 24,
+    borderRadius: radii.sm,
+    backgroundColor: '#F2F2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconButtonText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: typography.weights.bold,
   },
   productTitle: {
     fontSize: typography.fontSizes.sm,
     fontWeight: typography.weights.extrabold,
     color: colors.text,
     lineHeight: 18,
+    minHeight: 36,
   },
   productMeta: {
     fontSize: 10,
-    color: colors.textMuted,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    color: colors.textSecondary,
     marginTop: 2,
-  },
-  ratingText: {
-    fontSize: 11,
-    fontWeight: typography.weights.extrabold,
-    color: '#D97706',
-  },
-  soldText: {
-    fontSize: 10,
-    color: colors.textMuted,
   },
   productPrice: {
     fontSize: typography.fontSizes.md,
     fontWeight: typography.weights.extrabold,
     color: colors.text,
-    marginTop: 2,
+    marginTop: spacing.sm,
   },
-  unitText: {
-    fontSize: 10,
-    fontWeight: typography.weights.regular,
-    color: colors.textSecondary,
+  cardBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: radii.md,
+    marginTop: spacing.sm,
+    paddingVertical: 4,
+    gap: 8,
   },
-  addButton: {
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.md + 2,
-    paddingVertical: spacing.xs + 3,
-    backgroundColor: colors.surface,
-    ...shadows.sm,
+  stepBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: radii.sm,
+    backgroundColor: '#EDEDED',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  addButtonText: {
-    fontSize: typography.fontSizes.xs + 1,
+  stepBtnText: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: typography.weights.bold,
+    lineHeight: 18,
+  },
+  stepQty: {
+    color: colors.text,
+    fontSize: typography.fontSizes.sm,
     fontWeight: typography.weights.extrabold,
-    color: colors.primary,
-    letterSpacing: 0.5,
+    minWidth: 18,
+    textAlign: 'center',
   },
 });

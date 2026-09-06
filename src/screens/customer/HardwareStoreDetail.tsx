@@ -14,12 +14,16 @@ import { colors, spacing, typography, radii, shadows } from '../../theme/colors'
 import { useAppStore } from '../../store';
 import { mockStores } from '../../services/mockData';
 import { CartItem } from '../../types';
+import GradientAppHeader from '../../components/GradientAppHeader';
+import AddToCartBottomSheet from '../../components/AddToCartBottomSheet';
 
 export default function HardwareStoreDetail({ route, navigation }: any) {
   const storeId = route?.params?.storeId || 'r1';
   const { products, offers, retailers, cart, addToCart, updateCartQuantity, removeFromCart } = useAppStore();
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchMenu, setSearchMenu] = useState('');
+  const [selectedProductName, setSelectedProductName] = useState('');
+  const [showAddSheet, setShowAddSheet] = useState(false);
 
   const store: any = mockStores.find((s) => s.id === storeId) || mockStores[0];
 
@@ -57,6 +61,8 @@ export default function HardwareStoreDetail({ route, navigation }: any) {
       quantity: 1,
     };
     addToCart(newItem);
+    setSelectedProductName(offer.product?.name || 'Product');
+    setShowAddSheet(true);
   };
 
   const handleIncrease = (offerId: string) => {
@@ -71,18 +77,17 @@ export default function HardwareStoreDetail({ route, navigation }: any) {
     else updateCartQuantity(item.id, item.quantity - 1);
   };
 
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <SafeAreaView style={styles.root}>
-      {/* Top Navigation Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle} numberOfLines={1}>{store.name}</Text>
-        <TouchableOpacity style={styles.shareButton}>
-          <Text style={styles.shareIcon}>🔗</Text>
-        </TouchableOpacity>
-      </View>
+      <GradientAppHeader
+        title={store.name}
+        subtitle="Compare verified local store rates"
+        showBack={true}
+        onBackPress={() => navigation.goBack()}
+        rightIcon="🔗"
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Store Info Card (Swiggy / Zomato Restaurant Header Card) */}
@@ -247,6 +252,22 @@ export default function HardwareStoreDetail({ route, navigation }: any) {
 
         <View style={{ height: 120 }} />
       </ScrollView>
+
+      <AddToCartBottomSheet
+        visible={showAddSheet}
+        itemName={selectedProductName}
+        itemCount={cart.length}
+        totalQuantity={totalItems}
+        onClose={() => setShowAddSheet(false)}
+        onContinue={() => {
+          setShowAddSheet(false);
+          navigation.navigate('Cart');
+        }}
+        onViewCart={() => {
+          setShowAddSheet(false);
+          navigation.navigate('Cart');
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -583,24 +604,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFF7F2',
     paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radii.md,
+    paddingVertical: 8,
+    borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: colors.primary,
-    gap: 4,
-    minWidth: 84,
-    ...shadows.md,
+    borderColor: '#F26B3A',
+    gap: 6,
+    minWidth: 92,
+    ...shadows.sm,
   },
   addBtnText: {
-    color: colors.primary,
-    fontSize: typography.fontSizes.sm,
+    color: '#F26B3A',
+    fontSize: 13,
     fontWeight: typography.weights.extrabold,
+    letterSpacing: 0.2,
   },
   addBtnPlus: {
-    color: colors.primary,
-    fontSize: 16,
+    color: '#F26B3A',
+    fontSize: 18,
     fontWeight: typography.weights.extrabold,
     lineHeight: 18,
   },

@@ -11,6 +11,7 @@ import { mockStores, mockOffers, mockProducts } from '../../services/mockData';
 import { useAppStore } from '../../store';
 import { CartItem } from '../../types';
 import GradientAppHeader from '../../components/GradientAppHeader';
+import AddToCartBottomSheet from '../../components/AddToCartBottomSheet';
 
 const STORE_TABS = ['All Stores', 'Top Rated', 'Fast Delivery'];
 
@@ -18,6 +19,8 @@ export default function StoreCompareScreen({ route, navigation }: any) {
   const productId = route?.params?.productId || 'p_cement_1';
   const productName = route?.params?.productName || 'UltraTech Cement OPC 53 Grade (50 Kg)';
   const [activeTab, setActiveTab] = useState('All Stores');
+  const [selectedProductName, setSelectedProductName] = useState('');
+  const [showAddSheet, setShowAddSheet] = useState(false);
 
   const { cart, addToCart, updateCartQuantity, removeFromCart } = useAppStore();
 
@@ -70,6 +73,8 @@ export default function StoreCompareScreen({ route, navigation }: any) {
       quantity: 1,
     };
     addToCart(cartItem);
+    setSelectedProductName(product.name);
+    setShowAddSheet(true);
   };
 
   const handleIncrease = (offerId: string) => {
@@ -83,6 +88,8 @@ export default function StoreCompareScreen({ route, navigation }: any) {
     if (item.quantity <= 1) removeFromCart(item.id);
     else updateCartQuantity(item.id, item.quantity - 1);
   };
+
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <View style={styles.root}>
@@ -162,8 +169,21 @@ export default function StoreCompareScreen({ route, navigation }: any) {
         })}
 
         <Text style={styles.footerNote}>Showing top local hardware & material depots</Text>
-        <View style={{ height: 100 }} />
+        <View style={{ height: 110 }} />
       </ScrollView>
+
+      <AddToCartBottomSheet
+        visible={showAddSheet}
+        itemName={selectedProductName}
+        itemCount={cart.length}
+        totalQuantity={totalItems}
+        onClose={() => setShowAddSheet(false)}
+        onContinue={() => setShowAddSheet(false)}
+        onViewCart={() => {
+          setShowAddSheet(false);
+          navigation.navigate('Cart');
+        }}
+      />
     </View>
   );
 }
@@ -293,5 +313,40 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.xs,
     color: colors.textMuted,
     marginTop: spacing.md,
+  },
+  floatingCartBar: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.primary,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    ...shadows.lg,
+  },
+  cartLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  cartCount: {
+    color: colors.white,
+    fontSize: typography.fontSizes.xs,
+    fontWeight: typography.weights.extrabold,
+    letterSpacing: 0.5,
+  },
+  cartPrice: {
+    color: colors.white,
+    fontSize: typography.fontSizes.md,
+    fontWeight: typography.weights.extrabold,
+  },
+  cartButtonText: {
+    color: colors.white,
+    fontSize: typography.fontSizes.sm,
+    fontWeight: typography.weights.extrabold,
   },
 });

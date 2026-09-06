@@ -18,6 +18,15 @@ export default function CustomerCart({ navigation }: any) {
   const deliveryFee = itemTotal > 2000 ? 0 : 49;
   const handlingFee = 10;
   const totalAmount = itemTotal + deliveryFee + handlingFee;
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const storeGroups = Object.values(
+    cart.reduce<Record<string, { retailer: (typeof cart)[number]['retailer']; items: typeof cart }>>((groups, item) => {
+      const key = item.retailer.id;
+      if (!groups[key]) groups[key] = { retailer: item.retailer, items: [] };
+      groups[key].items.push(item);
+      return groups;
+    }, {})
+  );
 
   if (cart.length === 0) {
     return (
@@ -48,7 +57,7 @@ export default function CustomerCart({ navigation }: any) {
       {/* ── Gradient Header (Cart) ── */}
       <GradientAppHeader
         title="My Cart"
-        subtitle={`${cart.length} item${cart.length > 1 ? 's' : ''} added • Kondapur`}
+        subtitle={`${totalItems} item${totalItems > 1 ? 's' : ''} • ${storeGroups.length} store${storeGroups.length > 1 ? 's' : ''}`}
         showBack={false}
         rightIcon="🗑️"
         onRightPress={() =>
@@ -59,13 +68,13 @@ export default function CustomerCart({ navigation }: any) {
         }
       />
 
-      {/* Deliver To Strip */}
-      <View style={styles.deliverToStrip}>
+      <View style={styles.deliverCard}>
         <View style={styles.deliverToLeft}>
           <Text style={styles.deliverToIcon}>📍</Text>
-          <View>
+          <View style={styles.deliverTextWrap}>
             <Text style={styles.deliverToLabel}>Deliver to</Text>
-            <Text style={styles.deliverToAddress}>Kondapur, Hyderabad</Text>
+            <Text style={styles.deliverToAddress}>Kondapur, Hyderabad - 500084</Text>
+            <Text style={styles.deliveryWindow}>Delivery by Tomorrow, 10 AM - 2 PM</Text>
           </View>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('LocationSelect')}>
@@ -73,17 +82,19 @@ export default function CustomerCart({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
-      {/* Cart Items List */}
       <FlatList
-        data={cart}
-        keyExtractor={(item) => item.id}
+        data={storeGroups}
+        keyExtractor={(group) => group.retailer.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListFooterComponent={
           <>
             {/* Bill Details */}
             <View style={styles.billCard}>
-              <Text style={styles.billHeaderTitle}>Bill Details</Text>
+              <View style={styles.billTitleRow}>
+                <Text style={styles.billHeaderTitle}>Bill Summary</Text>
+                <Text style={styles.couponText}>Apply Coupon</Text>
+              </View>
 
               <View style={styles.billRow}>
                 <Text style={styles.billLabel}>Item Total</Text>
@@ -108,54 +119,45 @@ export default function CustomerCart({ navigation }: any) {
                 <Text style={styles.totalLabel}>Total Amount</Text>
                 <Text style={styles.totalValue}>₹{totalAmount.toLocaleString('en-IN')}</Text>
               </View>
+              <Text style={styles.savedText}>♧ You saved ₹120 on this order</Text>
             </View>
 
-            <View style={{ height: 120 }} />
+            <View style={{ height: 156 }} />
           </>
         }
-        renderItem={({ item }) => (
-          <View style={styles.cartCard}>
-            <View style={styles.itemImageBox}>
-              <Text style={styles.itemImageEmoji}>
-                {item.product.name.includes('Cement') ? '🏗️'
-                  : item.product.name.includes('Steel') ? '🔩'
-                  : item.product.name.includes('Sand') ? '⏳'
-                  : item.product.name.includes('Brick') ? '🧱'
-                  : item.product.name.includes('Paint') ? '🎨'
-                  : '📦'}
-              </Text>
-            </View>
-
-            <View style={styles.itemInfo}>
-              <Text style={styles.itemName} numberOfLines={2}>{item.product.name}</Text>
-              <Text style={styles.itemUnit}>{item.product.unit}</Text>
-              <Text style={styles.itemStoreName}>Store: {item.retailer.name}</Text>
-
-              <View style={styles.cardBottomRow}>
-                <View style={styles.stepper}>
-                  <TouchableOpacity
-                    style={styles.stepBtn}
-                    onPress={() => {
-                      if (item.quantity <= 1) removeFromCart(item.id);
-                      else updateCartQuantity(item.id, item.quantity - 1);
-                    }}
-                  >
-                    <Text style={styles.stepBtnText}>−</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.stepQty}>{item.quantity}</Text>
-                  <TouchableOpacity
-                    style={styles.stepBtn}
-                    onPress={() => updateCartQuantity(item.id, item.quantity + 1)}
-                  >
-                    <Text style={styles.stepBtnText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={styles.itemPrice}>
-                  ₹{(item.offer.price * item.quantity).toLocaleString('en-IN')}
-                </Text>
+        renderItem={({ item: group }) => (
+          <View style={styles.storeSection}>
+            <View style={styles.storeHeader}>
+              <View>
+                <Text style={styles.storeName}>{group.retailer.name}</Text>
+                <Text style={styles.storeMeta}>📍 {group.retailer.distance} km away  •  ⭐ {group.retailer.rating}  •  <Text style={styles.openText}>Open till 9:00 PM</Text></Text>
               </View>
+              <Text style={styles.itemCountPill}>{group.items.length} item{group.items.length > 1 ? 's' : ''}</Text>
             </View>
+            {group.items.map((item) => (
+              <View style={styles.cartCard} key={item.id}>
+                <View style={styles.itemImageBox}>
+                  <Text style={styles.itemImageEmoji}>
+                    {item.product.name.includes('Cement') ? '🏗️' : item.product.name.includes('Steel') ? '🔩' : item.product.name.includes('Sand') ? '⏳' : item.product.name.includes('Brick') ? '🧱' : item.product.name.includes('Paint') ? '🎨' : '📦'}
+                  </Text>
+                </View>
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemName} numberOfLines={3}>{item.product.name}</Text>
+                  <Text style={styles.itemUnit}>{item.product.unit}</Text>
+                  <Text style={styles.itemPrice}>₹{(item.offer.price * item.quantity).toLocaleString('en-IN')}</Text>
+                  <Text style={styles.unitPrice}>₹{item.offer.price.toLocaleString('en-IN')} / unit</Text>
+                  <View style={styles.cardBottomRow}>
+                    <TouchableOpacity style={styles.deleteButton} onPress={() => removeFromCart(item.id)}><Text>♧</Text></TouchableOpacity>
+                    <View style={styles.stepper}>
+                      <TouchableOpacity style={styles.stepBtn} onPress={() => item.quantity <= 1 ? removeFromCart(item.id) : updateCartQuantity(item.id, item.quantity - 1)}><Text style={styles.stepBtnText}>−</Text></TouchableOpacity>
+                      <Text style={styles.stepQty}>{item.quantity}</Text>
+                      <TouchableOpacity style={styles.stepBtn} onPress={() => updateCartQuantity(item.id, item.quantity + 1)}><Text style={styles.stepBtnText}>+</Text></TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            ))}
+            <View style={styles.storeBenefit}><Text style={styles.benefitIcon}>▣</Text><View><Text style={styles.benefitTitle}>{deliveryFee === 0 ? 'FREE delivery' : '₹50 delivery fee'} <Text style={styles.benefitNormal}>on this store</Text></Text><Text style={styles.benefitSub}>{deliveryFee === 0 ? 'You saved ₹120' : 'Delivery in 24 hrs'}</Text></View></View>
           </View>
         )}
       />
@@ -184,20 +186,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  deliverToStrip: {
+  deliverCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.surface,
+    margin: spacing.md,
+    borderRadius: radii.lg,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    paddingVertical: spacing.md,
+    ...shadows.sm,
   },
   deliverToLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs + 2,
+  },
+  deliverTextWrap: {
+    flex: 1,
   },
   deliverToIcon: {
     fontSize: 16,
@@ -211,27 +217,68 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
+  deliveryWindow: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: typography.weights.bold,
+    marginTop: 4,
+  },
   changeAddressText: {
     fontSize: typography.fontSizes.xs,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
   listContent: {
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
     gap: spacing.sm + 2,
+  },
+  storeSection: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    ...shadows.sm,
+  },
+  storeHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  storeName: {
+    color: colors.text,
+    fontSize: typography.fontSizes.sm,
+    fontWeight: typography.weights.extrabold,
+  },
+  storeMeta: {
+    color: colors.textMuted,
+    fontSize: 10,
+    marginTop: 4,
+  },
+  openText: {
+    color: '#2A9D55',
+    fontWeight: typography.weights.bold,
+  },
+  itemCountPill: {
+    color: colors.textSecondary,
+    backgroundColor: colors.background,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    fontSize: 10,
   },
   cartCard: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: radii.xl,
+    padding: spacing.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.sm,
+    marginBottom: spacing.sm,
   },
   itemImageBox: {
-    width: 68,
-    height: 68,
+    width: 112,
+    height: 128,
     borderRadius: radii.lg,
     backgroundColor: colors.background,
     alignItems: 'center',
@@ -241,7 +288,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borderLight,
   },
   itemImageEmoji: {
-    fontSize: 32,
+    fontSize: 46,
   },
   itemInfo: {
     flex: 1,
@@ -257,6 +304,11 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
+  unitPrice: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
   itemStoreName: {
     fontSize: 10,
     color: colors.textMuted,
@@ -267,6 +319,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: spacing.sm,
+  },
+  deleteButton: {
+    padding: spacing.xs,
   },
   stepper: {
     flexDirection: 'row',
@@ -310,6 +365,52 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     gap: spacing.xs + 2,
     ...shadows.sm,
+  },
+  billTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  couponText: {
+    color: colors.primary,
+    backgroundColor: colors.primaryFaded,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    fontSize: 10,
+    fontWeight: typography.weights.bold,
+  },
+  savedText: {
+    color: '#2A9D55',
+    fontSize: 10,
+    fontWeight: typography.weights.bold,
+    marginTop: spacing.xs,
+  },
+  storeBenefit: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F8EC',
+    borderRadius: radii.sm,
+    padding: spacing.sm,
+    gap: spacing.sm,
+  },
+  benefitIcon: {
+    color: '#3C8B4A',
+    fontSize: 18,
+  },
+  benefitTitle: {
+    color: '#34763E',
+    fontSize: 11,
+    fontWeight: typography.weights.bold,
+  },
+  benefitNormal: {
+    fontWeight: typography.weights.regular,
+  },
+  benefitSub: {
+    color: '#4F8A56',
+    fontSize: 10,
+    marginTop: 2,
   },
   billHeaderTitle: {
     fontSize: typography.fontSizes.sm,
@@ -358,15 +459,16 @@ const styles = StyleSheet.create({
   },
   bottomCheckoutBar: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 78,
     left: 0,
     right: 0,
+    height: 78,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: 0,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
     ...shadows.lg,

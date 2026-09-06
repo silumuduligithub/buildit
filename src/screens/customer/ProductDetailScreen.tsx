@@ -5,19 +5,19 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
 import { mockProducts, mockStores, mockOffers } from '../../services/mockData';
 import { useAppStore } from '../../store';
 import { CartItem } from '../../types';
-import GradientAppHeader from '../../components/GradientAppHeader';
+import AddToCartBottomSheet from '../../components/AddToCartBottomSheet';
 
 export default function ProductDetailScreen({ route, navigation }: any) {
   const productId = route?.params?.productId || 'p_cement_1';
-  const { addToCart } = useAppStore();
+  const { cart, addToCart, updateCartQuantity, removeFromCart } = useAppStore();
   const [isFavorite, setIsFavorite] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
+  const [showAddSheet, setShowAddSheet] = useState(false);
 
   const product = mockProducts.find((p) => p.id === productId) || mockProducts[0];
   const store = mockStores[0];
@@ -30,6 +30,9 @@ export default function ProductDetailScreen({ route, navigation }: any) {
     isAvailable: true,
     estimatedDeliveryMins: 25,
   };
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartItem = cart.find((item) => item.offer.id === offer.id);
+  const quantity = cartItem?.quantity || 0;
 
   const handleAddToCart = () => {
     const item: CartItem = {
@@ -40,10 +43,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
       quantity: 1,
     };
     addToCart(item);
-    Alert.alert('Added to Cart', `${product.name} added to your cart!`, [
-      { text: 'Continue Shopping', style: 'cancel' },
-      { text: 'View Cart', onPress: () => navigation.navigate('Cart') },
-    ]);
+    setShowAddSheet(true);
   };
 
   const handleBuyNow = () => {
@@ -58,115 +58,136 @@ export default function ProductDetailScreen({ route, navigation }: any) {
     navigation.navigate('Cart');
   };
 
+  const decreaseQuantity = () => {
+    if (!cartItem) return;
+    if (quantity <= 1) removeFromCart(cartItem.id);
+    else updateCartQuantity(cartItem.id, quantity - 1);
+  };
+
   return (
     <View style={styles.root}>
-      {/* ── Gradient Header (Product Details) ── */}
-      <GradientAppHeader
-        title="Product Details"
-        subtitle={product.brand}
-        showBack={true}
-        onBackPress={() => navigation.goBack()}
-        rightIcon={isFavorite ? '❤️' : '🤍'}
-        onRightPress={() => setIsFavorite(!isFavorite)}
-      />
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.topIcon} onPress={() => navigation.goBack()}>
+          <Text style={styles.backText}>‹</Text>
+        </TouchableOpacity>
+        <View style={styles.topActions}>
+          <TouchableOpacity style={styles.topIcon} onPress={() => setIsFavorite(!isFavorite)}>
+            <Text style={styles.actionIcon}>{isFavorite ? '♥' : '♡'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.topIcon}>
+            <Text style={styles.actionIcon}>♧</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Large Product Image Box */}
-        <View style={styles.imageContainer}>
+        <View style={styles.productHero}>
           <View style={styles.imageBox}>
-            <Text style={styles.productLargeEmoji}>
-              {product.name.includes('Cement') ? '🏗️'
-                : product.name.includes('Steel') ? '🔩'
-                : product.name.includes('Sand') ? '⏳'
-                : product.name.includes('Brick') ? '🧱'
-                : product.name.includes('Paint') ? '🎨'
-                : '📦'}
-            </Text>
-            <View style={styles.bagBrandBadge}>
-              <Text style={styles.bagBrandText}>{product.brand}</Text>
+            {product.name.includes('Cement') ? (
+              <>
+                <View style={styles.cementBag}>
+                  <Text style={styles.bagBrand}>UltraTech</Text>
+                  <Text style={styles.bagLabel}>CEMENT</Text>
+                  <Text style={styles.bagGrade}>53</Text>
+                  <Text style={styles.bagGradeLabel}>GRADE</Text>
+                  <Text style={styles.bagWeight}>50 kg</Text>
+                </View>
+                <View style={styles.cementPile} />
+              </>
+            ) : (
+              <Text style={styles.productLargeEmoji}>
+                {product.name.includes('Steel') ? '🔩'
+                  : product.name.includes('Sand') ? '⏳'
+                  : product.name.includes('Brick') ? '🧱'
+                  : product.name.includes('Paint') ? '🎨'
+                  : '📦'}
+              </Text>
+            )}
+          </View>
+          <View style={styles.heroInfo}>
+            <View style={styles.bestSeller}><Text style={styles.bestSellerText}>Best Seller</Text></View>
+            <Text style={styles.productTitle}>{product.name}</Text>
+            <Text style={styles.productUnitSubtitle}>{product.unit}</Text>
+            <View style={styles.ratingRow}>
+              <View style={styles.ratingStarBox}><Text style={styles.ratingStarText}>★ 4.6</Text></View>
+              <Text style={styles.ratingCountText}>(1,364+ reviews)</Text>
+            </View>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceValue}>₹{offer.price}</Text>
+              <Text style={styles.priceUnitText}>/ {product.unit.split(' ')[1] || 'bag'}</Text>
+            </View>
+            <View style={styles.taxPill}><Text style={styles.taxText}>Inclusive of all taxes</Text></View>
+            <Text style={styles.stockText}>In Stock</Text>
+          </View>
+        </View>
+
+        <View style={styles.specGrid}>
+          <View style={styles.specCell}><Text style={styles.specLabel}>Brand</Text><Text style={styles.specValue}>{product.brand}</Text></View>
+          <View style={styles.specCell}><Text style={styles.specLabel}>Grade</Text><Text style={styles.specValue}>OPC 53</Text></View>
+          <View style={styles.specCell}><Text style={styles.specLabel}>Pack Size</Text><Text style={styles.specValue}>{product.unit}</Text></View>
+          <View style={styles.specCell}><Text style={styles.specLabel}>Type</Text><Text style={styles.specValue}>Cement</Text></View>
+        </View>
+
+        <View style={styles.contentSection}>
+          <Text style={styles.sectionTitle}>About this product</Text>
+          <Text style={styles.descriptionText} numberOfLines={showFullDesc ? undefined : 4}>
+            {product.description} A high strength cement suitable for all types of construction. It provides superior workability, faster setting time and high early strength.
+          </Text>
+          <TouchableOpacity onPress={() => setShowFullDesc(!showFullDesc)}><Text style={styles.viewMoreText}>{showFullDesc ? 'Read less' : 'Read more'} ▾</Text></TouchableOpacity>
+        </View>
+
+        <View style={styles.contentSection}>
+          <Text style={styles.sectionTitle}>Key Features</Text>
+          <View style={styles.featuresGrid}>
+            {['High early strength', 'Minimum shrinkage', 'Better workability', 'Corrosion resistance', 'Low heat of hydration', 'Long lasting durability'].map((feature) => (
+              <View style={styles.featureItem} key={feature}><Text style={styles.featureIcon}>♧</Text><Text style={styles.featureText}>{feature}</Text></View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.contentSection}>
+          <View style={styles.reviewHeader}><Text style={styles.sectionTitle}>Customer Reviews (1,364+)</Text><Text style={styles.viewAll}>View all ›</Text></View>
+          <View style={styles.reviewSummary}>
+            <Text style={styles.reviewScore}>4.6</Text>
+            <Text style={styles.stars}>★★★★★</Text>
+            <View style={styles.ratingBars}>
+              {['5  ███████████ 78%', '4  ██ 15%', '3  █ 4%', '2  █ 2%', '1  █ 1%'].map((bar) => <Text style={styles.ratingBar} key={bar}>{bar}</Text>)}
             </View>
           </View>
         </View>
 
-        {/* Product Details Header */}
-        <View style={styles.detailsCard}>
-          <Text style={styles.productTitle}>{product.name}</Text>
-          <Text style={styles.productUnitSubtitle}>{product.unit}</Text>
-
-          {/* Star Rating */}
-          <View style={styles.ratingRow}>
-            <View style={styles.ratingStarBox}>
-              <Text style={styles.ratingStarText}>★ 4.6</Text>
-            </View>
-            <Text style={styles.ratingCountText}>(1,364+ Reviews)</Text>
-          </View>
-
-          {/* Price */}
-          <View style={styles.priceRow}>
-            <Text style={styles.priceValue}>₹{offer.price}</Text>
-            <Text style={styles.priceUnitText}>/ {product.unit.split(' ')[1] || 'bag'}</Text>
-            <View style={styles.taxPill}>
-              <Text style={styles.taxText}>Inclusive of all taxes</Text>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Specifications Table */}
-          <Text style={styles.sectionTitle}>Product Details</Text>
-
-          <View style={styles.specGrid}>
-            <View style={styles.specRow}>
-              <Text style={styles.specLabel}>Brand</Text>
-              <Text style={styles.specValue}>{product.brand}</Text>
-            </View>
-            <View style={styles.specRow}>
-              <Text style={styles.specLabel}>Pack Size</Text>
-              <Text style={styles.specValue}>{product.unit}</Text>
-            </View>
-            <View style={styles.specRow}>
-              <Text style={styles.specLabel}>Category</Text>
-              <Text style={styles.specValue}>{product.category}</Text>
-            </View>
-            <View style={styles.specRow}>
-              <Text style={styles.specLabel}>Usage</Text>
-              <Text style={styles.specValue}>Construction & Masonry</Text>
-            </View>
-          </View>
-
-          {/* Description */}
-          <View style={styles.descriptionBox}>
-            <Text style={styles.descriptionLabel}>Description</Text>
-            <Text style={styles.descriptionText} numberOfLines={showFullDesc ? undefined : 3}>
-              {product.description} Standard specification conformance with maximum compressive strength and rapid hardening. Suitable for RCC columns, beams, slabs, plastering, and commercial infrastructure.
-            </Text>
-            <TouchableOpacity onPress={() => setShowFullDesc(!showFullDesc)}>
-              <Text style={styles.viewMoreText}>{showFullDesc ? 'View less ▴' : 'View more ▾'}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* Bottom Action Bar */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
-          style={styles.addToCartButton}
-          onPress={handleAddToCart}
+          style={styles.expertButton}
+          onPress={() => {}}
           activeOpacity={0.85}
         >
-          <Text style={styles.addToCartText}>Add to Cart</Text>
+          <Text style={styles.expertText}>♧ Chat with Expert</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.buyNowButton}
-          onPress={handleBuyNow}
-          activeOpacity={0.88}
-        >
-          <Text style={styles.buyNowText}>Buy Now</Text>
+        <View style={styles.quantityControl}>
+          <TouchableOpacity style={styles.quantityButton} onPress={decreaseQuantity}><Text style={styles.quantityText}>−</Text></TouchableOpacity>
+          <Text style={styles.quantityValue}>{quantity || 1}</Text>
+          <TouchableOpacity style={styles.quantityButton} onPress={handleAddToCart}><Text style={styles.quantityText}>+</Text></TouchableOpacity>
+        </View>
+        <TouchableOpacity style={styles.buyNowButton} onPress={handleAddToCart} activeOpacity={0.88}>
+          <Text style={styles.buyNowText}>🛒 Add to Cart</Text>
         </TouchableOpacity>
       </View>
+
+      <AddToCartBottomSheet
+        visible={showAddSheet}
+        itemName={product.name}
+        itemCount={cart.length}
+        totalQuantity={totalItems}
+        onClose={() => setShowAddSheet(false)}
+        onContinue={() => setShowAddSheet(false)}
+        onViewCart={() => {
+          setShowAddSheet(false);
+          navigation.navigate('Cart');
+        }}
+      />
     </View>
   );
 }
@@ -176,8 +197,65 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  topBar: {
+    height: 58,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+  },
+  topActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  topIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backText: {
+    color: colors.text,
+    fontSize: 36,
+    lineHeight: 34,
+    fontWeight: typography.weights.regular,
+  },
+  actionIcon: {
+    color: colors.text,
+    fontSize: 27,
+  },
   scrollContent: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: 0,
+  },
+  productHero: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.md,
+  },
+  heroInfo: {
+    flex: 1,
+    paddingTop: spacing.xs,
+  },
+  bestSeller: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFD800',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  bestSellerText: {
+    color: colors.text,
+    fontSize: 9,
+    fontWeight: typography.weights.extrabold,
+  },
+  stockText: {
+    color: '#2A9D55',
+    fontSize: typography.fontSizes.xs,
+    fontWeight: typography.weights.bold,
+    marginTop: spacing.xs,
   },
   imageContainer: {
     backgroundColor: colors.surface,
@@ -188,19 +266,71 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   imageBox: {
-    width: 170,
-    height: 190,
+    width: 160,
+    height: 188,
     borderRadius: radii.xl,
-    backgroundColor: '#FFD700',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#E6BE00',
     position: 'relative',
-    ...shadows.lg,
+  },
+  cementBag: {
+    width: 82,
+    height: 142,
+    backgroundColor: '#F5C400',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#D9A900',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: spacing.sm,
+    shadowColor: '#8B6A00',
+    shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  bagBrand: {
+    color: '#173B2C',
+    fontSize: 13,
+    fontWeight: typography.weights.extrabold,
+    fontStyle: 'italic',
+  },
+  bagLabel: {
+    color: '#173B2C',
+    fontSize: 8,
+    fontWeight: typography.weights.extrabold,
+    letterSpacing: 1,
+  },
+  bagGrade: {
+    color: '#173B2C',
+    fontSize: 25,
+    lineHeight: 27,
+    fontWeight: typography.weights.extrabold,
+  },
+  bagGradeLabel: {
+    color: '#173B2C',
+    fontSize: 7,
+    fontWeight: typography.weights.extrabold,
+  },
+  bagWeight: {
+    color: '#5A4300',
+    fontSize: 7,
+    marginTop: spacing.md,
+  },
+  cementPile: {
+    position: 'absolute',
+    bottom: 16,
+    left: 12,
+    width: 70,
+    height: 22,
+    backgroundColor: '#777777',
+    borderRadius: 35,
+    transform: [{ rotate: '-8deg' }],
+    opacity: 0.88,
   },
   productLargeEmoji: {
-    fontSize: 68,
+    fontSize: 72,
   },
   bagBrandBadge: {
     position: 'absolute',
@@ -299,8 +429,17 @@ const styles = StyleSheet.create({
   specGrid: {
     backgroundColor: colors.background,
     borderRadius: radii.lg,
-    padding: spacing.md,
-    gap: spacing.xs + 2,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  specCell: {
+    flex: 1,
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   specRow: {
     flexDirection: 'row',
@@ -314,6 +453,67 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.xs,
     fontWeight: typography.weights.bold,
     color: colors.text,
+    textAlign: 'center',
+  },
+  contentSection: {
+    backgroundColor: colors.surface,
+    marginTop: spacing.xs,
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  featuresGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: spacing.sm,
+  },
+  featureItem: {
+    width: '50%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  featureIcon: {
+    color: colors.primary,
+    fontSize: 15,
+  },
+  featureText: {
+    color: colors.textSecondary,
+    fontSize: 10,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  viewAll: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: typography.weights.bold,
+  },
+  reviewSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  reviewScore: {
+    fontSize: 30,
+    fontWeight: typography.weights.extrabold,
+    color: colors.text,
+  },
+  stars: {
+    color: '#FFC400',
+    fontSize: 15,
+  },
+  ratingBars: {
+    flex: 1,
+    gap: 1,
+  },
+  ratingBar: {
+    color: colors.textSecondary,
+    fontSize: 9,
+    letterSpacing: 0,
   },
   descriptionBox: {
     marginTop: spacing.md,
@@ -337,16 +537,16 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 78,
     left: 0,
     right: 0,
     flexDirection: 'row',
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
-    gap: spacing.md,
+    gap: spacing.sm,
     ...shadows.lg,
   },
   addToCartButton: {
@@ -363,8 +563,46 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.sm,
     fontWeight: typography.weights.extrabold,
   },
-  buyNowButton: {
+  expertButton: {
     flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: '#FFB18D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expertText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: typography.weights.bold,
+  },
+  quantityControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  quantityButton: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantityText: {
+    color: colors.text,
+    fontSize: 23,
+    lineHeight: 24,
+  },
+  quantityValue: {
+    color: colors.text,
+    fontSize: typography.fontSizes.sm,
+    fontWeight: typography.weights.bold,
+    minWidth: 16,
+    textAlign: 'center',
+  },
+  buyNowButton: {
+    flex: 1.15,
     backgroundColor: colors.primary,
     paddingVertical: spacing.md - 2,
     borderRadius: radii.md,

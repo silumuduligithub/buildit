@@ -32,7 +32,7 @@ export default function AddressDeliveryScreen({ route, navigation }: any) {
       />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Addresses List */}
+        <Text style={styles.pageSectionTitle}>Saved Addresses</Text>
         {mockSavedAddresses.map((addr) => {
           const isSelected = selectedAddressId === addr.id;
           return (
@@ -79,7 +79,7 @@ export default function AddressDeliveryScreen({ route, navigation }: any) {
           </View>
         </View>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 96 }} />
       </ScrollView>
 
       {/* Bottom Continue Bar */}
@@ -109,27 +109,33 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.md,
-    gap: spacing.md,
+    gap: spacing.sm + 2,
+  },
+  pageSectionTitle: {
+    color: colors.text,
+    fontSize: typography.fontSizes.sm,
+    fontWeight: typography.weights.extrabold,
+    marginBottom: spacing.xs,
   },
   addressCard: {
     backgroundColor: colors.surface,
     padding: spacing.md,
-    borderRadius: radii.xl,
+    borderRadius: radii.md,
     borderWidth: 1.5,
     borderColor: colors.border,
     ...shadows.sm,
   },
   addressCardActive: {
     borderColor: colors.primary,
-    backgroundColor: colors.primaryFaded,
+    backgroundColor: '#FFF8F4',
   },
   cardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   labelBadge: {
-    backgroundColor: colors.text,
+    backgroundColor: colors.primary,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: radii.xs,
@@ -167,7 +173,7 @@ const styles = StyleSheet.create({
   addressDetails: {
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 16,
     marginTop: 2,
   },
   contactName: {
@@ -185,8 +191,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: radii.sm,
     marginTop: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderWidth: 0,
   },
   deliveryTimeText: {
     fontSize: 11,
@@ -201,7 +206,7 @@ const styles = StyleSheet.create({
   instructionsSection: {
     backgroundColor: colors.surface,
     padding: spacing.md,
-    borderRadius: radii.xl,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
     ...shadows.sm,
@@ -218,7 +223,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    minHeight: 60,
+    minHeight: 52,
   },
   textInput: {
     fontSize: typography.fontSizes.xs,
@@ -227,10 +232,12 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 78,
     left: 0,
     right: 0,
     padding: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,

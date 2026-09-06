@@ -51,7 +51,7 @@ export default function GradientAppHeader({
 
   return (
     <LinearGradient
-      colors={['#140202', '#8B0000', '#D32F2F', '#E53935']}
+      colors={['#1B1717', '#D96F48', '#E89A69', '#F2D7C0']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[
