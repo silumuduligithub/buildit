@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,27 +7,64 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
+import {
+  User,
+  MapPin,
+  Package,
+  ShoppingCart,
+  CreditCard,
+  MessageCircle,
+  Settings,
+  ChevronRight,
+  Pencil,
+  Briefcase,
+  Plus,
+} from 'lucide-react-native';
+import { colors, typography, spacing, radii, shadows, iconSizes } from '../../theme/colors';
+import { useAppStore } from '../../store';
 import GradientAppHeader from '../../components/GradientAppHeader';
 
-const MENU_ITEMS = [
-  { id: 'm_profile', title: 'My Profile', icon: '👤', screen: 'Profile' },
-  { id: 'm_addresses', title: 'Saved Addresses', icon: '📍', screen: 'LocationSelect' },
-  { id: 'm_orders', title: 'My Orders', icon: '📦', screen: 'Orders' },
-  { id: 'm_cart', title: 'My Cart', icon: '🛒', screen: 'Cart' },
-  { id: 'm_payments', title: 'Payments', icon: '💳', screen: 'Payment' },
-  { id: 'm_help', title: 'Help & Support', icon: '💬', screen: 'Help' },
-  { id: 'm_settings', title: 'Settings', icon: '⚙️', screen: 'Settings' },
+type LucideIcon = React.FC<{ size: number; color: string; strokeWidth: number }>;
+
+const MENU_ITEMS: { id: string; title: string; Icon: LucideIcon; screen: string }[] = [
+  { id: 'm_profile', title: 'My Profile', Icon: User, screen: 'Profile' },
+  { id: 'm_addresses', title: 'Saved Addresses', Icon: MapPin, screen: 'LocationSelect' },
+  { id: 'm_orders', title: 'My Orders', Icon: Package, screen: 'Orders' },
+  { id: 'm_cart', title: 'My Cart', Icon: ShoppingCart, screen: 'Cart' },
+  { id: 'm_payments', title: 'Payments', Icon: CreditCard, screen: 'Payment' },
+  { id: 'm_help', title: 'Help & Support', Icon: MessageCircle, screen: 'Help' },
+  { id: 'm_settings', title: 'Settings', Icon: Settings, screen: 'Settings' },
 ];
 
 export default function AccountScreen({ navigation }: any) {
-  const handleMenuPress = (item: typeof MENU_ITEMS[0]) => {
+  const { currentUser, refreshProfile, logoutUser } = useAppStore();
+
+  useEffect(() => {
+    refreshProfile().catch(() => {});
+  }, []);
+
+  const userName = currentUser?.name || 'Ravi Kumar';
+  const userPhone = currentUser?.phone || '9876543210';
+  const userEmail = currentUser?.email || 'ravi.kumar@buildkart.in';
+  const initials = userName
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || 'RK';
+
+  const handleMenuPress = (item: (typeof MENU_ITEMS)[0]) => {
     if (item.screen === 'LocationSelect') {
       navigation.navigate('LocationSelect');
     } else if (item.screen === 'Orders') {
       navigation.navigate('Orders');
     } else if (item.screen === 'Cart') {
       navigation.navigate('Cart');
+    } else if (item.screen === 'Settings') {
+      Alert.alert('Settings', 'Account & App Preferences', [
+        { text: 'Logout', style: 'destructive', onPress: () => logoutUser() },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
     } else {
       Alert.alert(item.title, `Manage your ${item.title.toLowerCase()} settings.`);
     }
@@ -35,72 +72,112 @@ export default function AccountScreen({ navigation }: any) {
 
   return (
     <View style={styles.root}>
-      {/* ── Gradient Header (Account) ── */}
       <GradientAppHeader
         title="My Account"
-        subtitle="Ravi Kumar • 9876543210"
+        subtitle={`${userName} · ${userPhone}`}
         showBack={false}
-        rightIcon="⚙️"
+        rightIcon={<Settings size={18} color={colors.white} strokeWidth={1.5} />}
         onRightPress={() => Alert.alert('Settings', 'App preferences & notifications')}
       />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Profile Card */}
-        <View style={styles.profileSummaryCard}>
+        <View style={styles.profileCard}>
           <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>RK</Text>
+            <Text style={styles.avatarInitials}>{initials}</Text>
           </View>
-
-          <View style={styles.profileTextBox}>
-            <Text style={styles.profileName}>Ravi Kumar</Text>
-            <Text style={styles.profilePhone}>+91 98765 43210</Text>
-            <Text style={styles.profileEmail}>ravi.kumar@buildkart.in</Text>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{userName}</Text>
+            <Text style={styles.profilePhone}>{userPhone.startsWith('+91') ? userPhone : `+91 ${userPhone}`}</Text>
+            <Text style={styles.profileEmail}>{userEmail}</Text>
           </View>
-
           <TouchableOpacity
-            style={styles.editBtn}
+            style={styles.editButton}
             onPress={() => Alert.alert('Edit Profile', 'Update your personal info and GST details.')}
+            accessibilityLabel="Edit profile"
           >
-            <Text style={styles.editIcon}>✏️</Text>
+            <Pencil size={16} color={colors.primary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
 
-        {/* Menu Cards */}
+        {/* Menu */}
         <View style={styles.menuContainer}>
-          {MENU_ITEMS.map((item) => (
+          {MENU_ITEMS.map((item, index) => (
             <TouchableOpacity
               key={item.id}
-              style={styles.menuRow}
+              style={[
+                styles.menuRow,
+                index < MENU_ITEMS.length - 1 && styles.menuRowBorder,
+              ]}
               onPress={() => handleMenuPress(item)}
               activeOpacity={0.75}
             >
-              <View style={styles.menuIconCircle}>
-                <Text style={styles.menuIconEmoji}>{item.icon}</Text>
+              <View style={styles.menuIconBox}>
+                <item.Icon size={18} color={colors.textSecondary} strokeWidth={1.5} />
               </View>
               <Text style={styles.menuTitle}>{item.title}</Text>
-              <Text style={styles.chevron}>›</Text>
+              <ChevronRight size={16} color={colors.textTertiary} strokeWidth={1.5} />
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* GST / Business Billing Card */}
+        {/* Business Card */}
         <View style={styles.businessCard}>
-          <View style={styles.businessTop}>
-            <Text style={styles.businessIcon}>💼</Text>
+          <View style={styles.businessHeader}>
+            <View style={styles.businessIconBox}>
+              <Briefcase size={20} color={colors.primary} strokeWidth={1.5} />
+            </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.businessTitle}>BuildKart for Business / Contractors</Text>
-              <Text style={styles.businessSub}>Add GSTIN for tax input credit & bulk wholesale rates</Text>
+              <Text style={styles.businessTitle}>BuildKart for Business</Text>
+              <Text style={styles.businessSub}>
+                Add GSTIN for tax input credit & bulk wholesale rates
+              </Text>
             </View>
           </View>
           <TouchableOpacity
-            style={styles.addGstBtn}
-            onPress={() => Alert.alert('GST Invoicing', 'Enter your 15-digit GSTIN to claim 18% ITC on materials.')}
+            style={styles.addGstButton}
+            onPress={() =>
+              Alert.alert('GST Invoicing', 'Enter your 15-digit GSTIN to claim 18% ITC on materials.')
+            }
+            activeOpacity={0.8}
           >
-            <Text style={styles.addGstText}>+ Add GSTIN</Text>
+            <Plus size={14} color={colors.primary} strokeWidth={2} />
+            <Text style={styles.addGstText}>Add GSTIN</Text>
           </TouchableOpacity>
         </View>
 
-        {/* App Version */}
+        {/* Account Actions */}
+        <View style={styles.authActionsRow}>
+          <TouchableOpacity
+            style={styles.loginSwitchBtn}
+            onPress={() => navigation.navigate('Login')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.loginSwitchText}>🔑 Sign In / Switch Account</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.logoutBtn}
+            onPress={() => {
+              Alert.alert('Logout', 'Are you sure you want to sign out?', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Sign Out',
+                  style: 'destructive',
+                  onPress: async () => {
+                    await logoutUser();
+                    navigation.navigate('Login');
+                  },
+                },
+              ]);
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.logoutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Version */}
         <Text style={styles.versionText}>BuildKart App v1.0.0 (Release)</Text>
 
         <View style={{ height: 100 }} />
@@ -115,54 +192,54 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
-    padding: spacing.md,
+    padding: spacing.base,
     gap: spacing.md,
   },
-  profileSummaryCard: {
+
+  // Profile Card
+  profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: radii.xl,
+    padding: spacing.base,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
     ...shadows.sm,
   },
   avatarCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 52,
+    height: 52,
+    borderRadius: radii.full,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
-    ...shadows.sm,
   },
-  avatarText: {
+  avatarInitials: {
     color: colors.white,
-    fontSize: typography.fontSizes.md,
-    fontWeight: typography.weights.extrabold,
+    fontSize: typography.fontSizes.h3,
+    fontWeight: typography.weights.bold,
   },
-  profileTextBox: {
+  profileInfo: {
     flex: 1,
   },
   profileName: {
-    fontSize: typography.fontSizes.md,
-    fontWeight: typography.weights.extrabold,
+    fontSize: typography.fontSizes.title,
+    fontWeight: typography.weights.bold,
     color: colors.text,
   },
   profilePhone: {
-    fontSize: typography.fontSizes.xs,
+    fontSize: typography.fontSizes.bodySmall,
     color: colors.textSecondary,
     marginTop: 2,
-    fontWeight: typography.weights.semibold,
   },
   profileEmail: {
-    fontSize: 10,
-    color: colors.textMuted,
+    fontSize: typography.fontSizes.caption,
+    color: colors.textTertiary,
     marginTop: 1,
   },
-  editBtn: {
+  editButton: {
     width: 36,
     height: 36,
     borderRadius: radii.full,
@@ -170,91 +247,131 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  editIcon: {
-    fontSize: 16,
-  },
+
+  // Menu
   menuContainer: {
     backgroundColor: colors.surface,
-    borderRadius: radii.xl,
-    paddingHorizontal: spacing.md,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
     ...shadows.sm,
   },
   menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    paddingVertical: spacing.base,
+    paddingHorizontal: spacing.base,
   },
-  menuIconCircle: {
+  menuRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  menuIconBox: {
     width: 36,
     height: 36,
     borderRadius: radii.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
   },
-  menuIconEmoji: {
-    fontSize: 18,
-  },
   menuTitle: {
-    fontSize: typography.fontSizes.sm,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
     flex: 1,
+    fontSize: typography.fontSizes.body,
+    fontWeight: typography.weights.medium,
+    color: colors.text,
   },
-  chevron: {
-    fontSize: 20,
-    color: colors.textMuted,
-    fontWeight: typography.weights.bold,
-  },
+
+  // Business Card
   businessCard: {
     backgroundColor: colors.surface,
-    borderRadius: radii.xl,
-    padding: spacing.md,
+    borderRadius: radii.lg,
+    padding: spacing.base,
     borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
+    borderColor: colors.borderLight,
+    gap: spacing.md,
     ...shadows.sm,
   },
-  businessTop: {
+  businessHeader: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
-  businessIcon: {
-    fontSize: 24,
+  businessIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    backgroundColor: colors.primaryFaded,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   businessTitle: {
-    fontSize: typography.fontSizes.sm,
-    fontWeight: typography.weights.extrabold,
+    fontSize: typography.fontSizes.body,
+    fontWeight: typography.weights.semibold,
     color: colors.text,
   },
   businessSub: {
-    fontSize: typography.fontSizes.xs,
+    fontSize: typography.fontSizes.caption,
     color: colors.textSecondary,
     marginTop: 2,
     lineHeight: 16,
   },
-  addGstBtn: {
-    backgroundColor: colors.primaryFaded,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
+  addGstButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryFaded,
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.primary,
+    gap: spacing.xs,
   },
   addGstText: {
     color: colors.primary,
-    fontSize: typography.fontSizes.xs,
-    fontWeight: typography.weights.extrabold,
+    fontSize: typography.fontSizes.bodySmall,
+    fontWeight: typography.weights.semibold,
+  },
+  authActionsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  loginSwitchBtn: {
+    flex: 2,
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.md - 2,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    ...shadows.sm,
+  },
+  loginSwitchText: {
+    color: colors.text,
+    fontSize: typography.fontSizes.bodySmall,
+    fontWeight: typography.weights.bold,
+  },
+  logoutBtn: {
+    flex: 1,
+    backgroundColor: '#FEF2F2',
+    paddingVertical: spacing.md - 2,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  logoutText: {
+    color: '#DC2626',
+    fontSize: typography.fontSizes.bodySmall,
+    fontWeight: typography.weights.bold,
   },
   versionText: {
     textAlign: 'center',
-    fontSize: 10,
-    color: colors.textMuted,
+    fontSize: typography.fontSizes.caption,
+    color: colors.textTertiary,
     marginTop: spacing.sm,
   },
 });

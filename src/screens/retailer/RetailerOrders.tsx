@@ -17,7 +17,11 @@ const ORDER_FILTERS = ['All', 'New', 'Accepted', 'Preparing', 'Ready', 'Complete
 export default function RetailerOrders({ route, navigation }: any) {
   const initialFilter = route?.params?.filter || 'All';
   const [selectedFilter, setSelectedFilter] = useState(initialFilter);
-  const { orders, updateOrderStatus } = useAppStore();
+  const { orders, updateOrderStatus, fetchOrders } = useAppStore();
+
+  React.useEffect(() => {
+    fetchOrders().catch(() => {});
+  }, []);
 
   const filteredOrders = orders.filter((o) => {
     if (selectedFilter === 'All') return true;

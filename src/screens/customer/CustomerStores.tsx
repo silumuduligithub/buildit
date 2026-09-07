@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
 import { mockStores } from '../../services/mockData';
+import { useAppStore } from '../../store';
 import SwiggyHeader from '../../components/SwiggyHeader';
 
 const HARDWARE_BRANDS = [
@@ -29,6 +30,13 @@ const COLLECTIONS = [
 
 export default function CustomerStores({ navigation }: any) {
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const { retailers, fetchStores } = useAppStore();
+
+  useEffect(() => {
+    fetchStores().catch(() => {});
+  }, []);
+
+  const storesList = retailers.length > 0 ? retailers : mockStores;
 
   return (
     <SafeAreaView style={styles.root}>
@@ -85,7 +93,7 @@ export default function CustomerStores({ navigation }: any) {
             <TouchableOpacity
               key={col.id}
               style={styles.collectionCard}
-              onPress={() => navigation.navigate('StoreDetail', { storeId: 'r1' })}
+              onPress={() => navigation.navigate('StoreDetail', { storeId: storesList[0]?.id || 'r1' })}
               activeOpacity={0.88}
             >
               <View style={styles.collectionTop}>
@@ -107,7 +115,7 @@ export default function CustomerStores({ navigation }: any) {
           <Text style={styles.sectionSub}>Verified outlets with immediate local dispatch</Text>
         </View>
 
-        {mockStores.map((store: any) => (
+        {storesList.map((store: any) => (
           <TouchableOpacity
             key={store.id}
             style={styles.storeListCard}
@@ -124,16 +132,16 @@ export default function CustomerStores({ navigation }: any) {
               <View style={styles.storeNameRow}>
                 <Text style={styles.storeNameText} numberOfLines={1}>{store.name}</Text>
                 <View style={styles.ratingBadge}>
-                  <Text style={styles.ratingBadgeText}>★ {store.rating}</Text>
+                  <Text style={styles.ratingBadgeText}>★ {store.rating || 4.5}</Text>
                 </View>
               </View>
 
-              <Text style={styles.storeCuisine}>{store.cuisineTag}</Text>
+              <Text style={styles.storeCuisine}>{store.cuisineTag || 'Power Tools & Industrial Hardware'}</Text>
               <Text style={styles.storeAddress} numberOfLines={1}>{store.address}</Text>
 
               <View style={styles.storeBottomStrip}>
-                <Text style={styles.storeDistance}>📍 {store.distance} km • {store.prepTime}</Text>
-                <Text style={styles.storeDiscount}>🏷️ {store.discountBanner.split('•')[0]}</Text>
+                <Text style={styles.storeDistance}>📍 {store.distance || 1.5} km • {store.prepTime || '25-30 min'}</Text>
+                <Text style={styles.storeDiscount}>🏷️ {(store.discountBanner || 'UP TO 15% OFF').split('•')[0]}</Text>
               </View>
             </View>
           </TouchableOpacity>

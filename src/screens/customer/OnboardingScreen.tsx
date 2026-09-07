@@ -61,7 +61,7 @@ export default function OnboardingScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={styles.loginRow}
-          onPress={() => navigation.navigate('HomeScreen')}
+          onPress={() => navigation.navigate('Login')}
         >
           <Text style={styles.alreadyAccountText}>
             Already have an account? <Text style={styles.loginText}>Login</Text>

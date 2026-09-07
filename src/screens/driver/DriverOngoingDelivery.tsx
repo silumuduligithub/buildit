@@ -7,25 +7,45 @@ import {
   ScrollView,
   Alert,
   TextInput,
+  Linking,
   Platform,
-  StatusBar,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import {
+  Navigation,
+  Phone,
+  MapPin,
+  Store,
+  CheckCircle2,
+  KeyRound,
+  ShieldCheck,
+  PackageCheck,
+  Check,
+  ChevronRight,
+  Truck,
+  ArrowRight,
+} from 'lucide-react-native';
 import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
 import GradientAppHeader from '../../components/GradientAppHeader';
 
-// 5-Stage Delivery State Machine from BRD
 type DeliveryStage =
-  | 'going_to_pickup'     // Driver Accepted -> Travelling to Retailer
-  | 'arrived_at_pickup'   // At Retailer -> Checking & Confirming materials
-  | 'out_for_delivery'    // Pickup Confirmed -> Travelling to Customer Site
-  | 'arrived_at_customer' // At Site -> Customer Verification & OTP
-  | 'completed';          // Delivery Completed Screen
+  | 'going_to_pickup'
+  | 'arrived_at_pickup'
+  | 'out_for_delivery'
+  | 'arrived_at_customer'
+  | 'completed';
 
 export default function DriverOngoingDelivery({ route, navigation }: any) {
   const [stage, setStage] = useState<DeliveryStage>('going_to_pickup');
   const [otpInput, setOtpInput] = useState('4821');
   const [itemsChecked, setItemsChecked] = useState({ item1: true, item2: true });
+
+  const handleOpenMaps = () => {
+    Linking.openURL('https://maps.google.com/?q=Kondapur+Hyderabad');
+  };
+
+  const handleCallCustomer = () => {
+    Linking.openURL('tel:+919876543210');
+  };
 
   const handleNextStage = () => {
     if (stage === 'going_to_pickup') {
@@ -36,7 +56,10 @@ export default function DriverOngoingDelivery({ route, navigation }: any) {
       setStage('arrived_at_customer');
     } else if (stage === 'arrived_at_customer') {
       if (otpInput.trim() !== '4821') {
-        Alert.alert('Invalid OTP', 'Please enter the 4-digit code provided by customer (4821).');
+        Alert.alert(
+          'Invalid PIN',
+          'Please enter the 4-digit code provided by the site engineer (4821).'
+        );
         return;
       }
       setStage('completed');
@@ -48,11 +71,13 @@ export default function DriverOngoingDelivery({ route, navigation }: any) {
       <View style={styles.root}>
         <View style={styles.completedContainer}>
           <View style={styles.completedCheckCircle}>
-            <Text style={styles.completedCheckEmoji}>✓</Text>
+            <CheckCircle2 size={54} color={colors.success} strokeWidth={2} />
           </View>
 
           <Text style={styles.completedTitle}>Delivery Completed!</Text>
-          <Text style={styles.completedSub}>Materials handed over successfully.</Text>
+          <Text style={styles.completedSub}>
+            Materials verified & handed over at site.
+          </Text>
 
           <View style={styles.completedSummaryCard}>
             <View style={styles.summaryRow}>
@@ -69,8 +94,8 @@ export default function DriverOngoingDelivery({ route, navigation }: any) {
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryRow}>
-              <Text style={styles.earningsLabel}>Delivery Earnings</Text>
-              <Text style={styles.earningsVal}>₹680</Text>
+              <Text style={styles.earningsLabel}>Trip Earnings</Text>
+              <Text style={styles.earningsVal}>₹480</Text>
             </View>
           </View>
 
@@ -79,7 +104,8 @@ export default function DriverOngoingDelivery({ route, navigation }: any) {
             onPress={() => navigation.navigate('Home')}
             activeOpacity={0.88}
           >
-            <Text style={styles.nextDeliveryBtnText}>Next Delivery →</Text>
+            <Text style={styles.nextDeliveryBtnText}>Back to Dashboard</Text>
+            <ArrowRight size={18} color={colors.white} strokeWidth={2.2} />
           </TouchableOpacity>
         </View>
       </View>
@@ -91,646 +117,482 @@ export default function DriverOngoingDelivery({ route, navigation }: any) {
       {/* ── Gradient Header ── */}
       <GradientAppHeader
         title={
-          stage === 'going_to_pickup' ? 'Going to Pickup'
-          : stage === 'arrived_at_pickup' ? 'Confirm Pickup'
-          : stage === 'out_for_delivery' ? 'Ongoing Delivery'
-          : 'Customer Verification'
+          stage === 'going_to_pickup'
+            ? 'Going to Pickup'
+            : stage === 'arrived_at_pickup'
+            ? 'Confirm Material Pickup'
+            : stage === 'out_for_delivery'
+            ? 'Out for Site Delivery'
+            : 'Verify & Complete Delivery'
         }
-        subtitle={stage.includes('pickup') ? 'Sharma Building Materials (2.4 km)' : 'Ravi Kumar • Gokul Construction'}
+        subtitle={
+          stage.includes('pickup')
+            ? 'Sri Sai Hardware (1.5 km)'
+            : 'Ravi Kumar · Kondapur Site'
+        }
         showBack={true}
         onBackPress={() => navigation.goBack()}
-        rightIcon="📞"
-        onRightPress={() => Alert.alert('Call', stage.includes('pickup') ? 'Calling Retailer: +91 98480 12345' : 'Calling Customer: +91 98765 43210')}
       />
 
-      {/* ── Stage Progress Indicator Strip ── */}
-      <View style={styles.stagesStrip}>
-        <View style={[styles.stageStep, styles.stageStepActive]}>
-          <Text style={styles.stepNum}>1</Text>
-          <Text style={styles.stepLabel}>Pickup</Text>
-        </View>
-        <View style={[styles.stepConnector, stage !== 'going_to_pickup' && styles.stepConnectorActive]} />
-
-        <View style={[styles.stageStep, stage !== 'going_to_pickup' && styles.stageStepActive]}>
-          <Text style={styles.stepNum}>2</Text>
-          <Text style={styles.stepLabel}>Loaded</Text>
-        </View>
-        <View style={[styles.stepConnector, (stage === 'out_for_delivery' || stage === 'arrived_at_customer') && styles.stepConnectorActive]} />
-
-        <View style={[styles.stageStep, (stage === 'out_for_delivery' || stage === 'arrived_at_customer') && styles.stageStepActive]}>
-          <Text style={styles.stepNum}>3</Text>
-          <Text style={styles.stepLabel}>Transit</Text>
-        </View>
-        <View style={[styles.stepConnector, stage === 'arrived_at_customer' && styles.stepConnectorActive]} />
-
-        <View style={[styles.stageStep, stage === 'arrived_at_customer' && styles.stageStepActive]}>
-          <Text style={styles.stepNum}>4</Text>
-          <Text style={styles.stepLabel}>Deliver</Text>
-        </View>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* ── Simulated Interactive Map ── */}
-        <View style={styles.mapContainer}>
-          <View style={styles.mapRoadH1} />
-          <View style={styles.mapRoadH2} />
-          <View style={styles.mapRoadV1} />
-
-          <Text style={styles.mapAreaLabel1}>Banjara Hills</Text>
-          <Text style={styles.mapAreaLabel2}>Jubilee Hills</Text>
-          <Text style={styles.mapAreaLabel3}>Madhapur</Text>
-
-          <View style={styles.routePathLine} />
-
-          <View style={styles.depotMarker}>
-            <View style={styles.depotDot} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* ── Live Step Progression Bar ── */}
+        <View style={styles.stageTrackerCard}>
+          <View style={styles.stageTrackRow}>
+            <View
+              style={[
+                styles.stagePill,
+                stage === 'going_to_pickup' && styles.stagePillActive,
+              ]}
+            >
+              <Text style={styles.stageText}>1. Pickup</Text>
+            </View>
+            <View style={styles.stageLine} />
+            <View
+              style={[
+                styles.stagePill,
+                stage === 'out_for_delivery' && styles.stagePillActive,
+              ]}
+            >
+              <Text style={styles.stageText}>2. Transit</Text>
+            </View>
+            <View style={styles.stageLine} />
+            <View
+              style={[
+                styles.stagePill,
+                stage === 'arrived_at_customer' && styles.stagePillActive,
+              ]}
+            >
+              <Text style={styles.stageText}>3. Dropoff</Text>
+            </View>
           </View>
+        </View>
 
-          <View style={styles.etaPill}>
-            <Text style={styles.etaText}>
-              {stage.includes('pickup') ? 'ETA 8 min' : 'ETA 15 min'}
+        {/* ── Address & Navigation Spotlight ── */}
+        <View style={styles.targetCard}>
+          <View style={styles.targetHeader}>
+            <View style={styles.targetTag}>
+              <Text style={styles.targetTagText}>
+                {stage.includes('pickup') ? 'SUPPLIER STORE' : 'CUSTOMER SITE'}
+              </Text>
+            </View>
+            <Text style={styles.targetDistance}>
+              {stage.includes('pickup') ? '1.5 km away' : '2.3 km away'}
             </Text>
           </View>
 
-          <View style={styles.destMarker}>
-            <View style={styles.destMarkerPin}>
-              <Text style={{ fontSize: 16 }}>📍</Text>
-            </View>
+          <Text style={styles.targetName}>
+            {stage.includes('pickup')
+              ? 'Sri Sai Hardware & Builders Depot'
+              : 'Golden Heights Site, Plot 45'}
+          </Text>
+          <Text style={styles.targetAddress}>
+            {stage.includes('pickup')
+              ? 'Near RTO Office, Main Road, Kondapur, Hyderabad'
+              : 'Opp. Metro Pillar 825, Kondapur Main Road, Hyderabad'}
+          </Text>
+
+          <View style={styles.targetActionsRow}>
+            <TouchableOpacity
+              style={styles.navActionBtn}
+              onPress={handleOpenMaps}
+              activeOpacity={0.85}
+            >
+              <Navigation size={18} color={colors.white} strokeWidth={2} />
+              <Text style={styles.navActionText}>Turn-by-Turn GPS</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.callActionBtn}
+              onPress={handleCallCustomer}
+              activeOpacity={0.8}
+            >
+              <Phone size={18} color={colors.primary} strokeWidth={2} />
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* ── STAGE 1: Going to Pickup ── */}
-        {stage === 'going_to_pickup' && (
-          <View style={styles.card}>
-            <Text style={styles.cardHeader}>PICKUP DETAILS</Text>
-            <View style={styles.locRow}>
-              <View style={styles.iconCircle}>
-                <Text style={{ fontSize: 20 }}>🏪</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.locTitle}>Sharma Building Materials</Text>
-                <Text style={styles.locSub}>Plot 45, Banjara Hills Main Rd, Hyderabad</Text>
-                <Text style={styles.distanceBadge}>2.4 km away from current location</Text>
-              </View>
+        {/* ── Materials Checklist Card ── */}
+        <View style={styles.manifestCard}>
+          <Text style={styles.manifestHeading}>Materials Manifest</Text>
+          <View style={styles.manifestRow}>
+            <PackageCheck size={18} color={colors.primary} strokeWidth={2} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.manifestItemName}>
+                UltraTech Cement OPC 53 Grade
+              </Text>
+              <Text style={styles.manifestQty}>20 Bags (1,000 kg)</Text>
             </View>
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.navBtn}
-                onPress={() => Alert.alert('Navigation', 'Opening Google Maps to Sharma Building Materials')}
-              >
-                <Text style={styles.navBtnText}>🧭 Navigate to Pickup</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.primaryActionBtn}
-                onPress={handleNextStage}
-              >
-                <Text style={styles.primaryActionBtnText}>Arrived at Pickup →</Text>
-              </TouchableOpacity>
-            </View>
+            <CheckCircle2 size={18} color={colors.success} strokeWidth={2} />
           </View>
-        )}
 
-        {/* ── STAGE 2: Arrived at Pickup (Confirmation Checklist) ── */}
-        {stage === 'arrived_at_pickup' && (
-          <View style={styles.card}>
-            <Text style={styles.cardHeader}>VERIFY MATERIALS LOADED</Text>
-            <Text style={styles.checkInstruction}>
-              Please verify package seal and count before leaving retailer depot.
-            </Text>
+          <View style={styles.manifestDivider} />
 
-            <TouchableOpacity
-              style={styles.checkItem}
-              onPress={() => setItemsChecked({ ...itemsChecked, item1: !itemsChecked.item1 })}
-            >
-              <Text style={styles.checkIcon}>{itemsChecked.item1 ? '✅' : '⬜'}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.itemName}>UltraTech Cement OPC 53 Grade</Text>
-                <Text style={styles.itemQty}>10 Bags (50 Kg each)</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.checkItem}
-              onPress={() => setItemsChecked({ ...itemsChecked, item2: !itemsChecked.item2 })}
-            >
-              <Text style={styles.checkIcon}>{itemsChecked.item2 ? '✅' : '⬜'}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.itemName}>Tata Tiscon 550D TMT Steel 12mm</Text>
-                <Text style={styles.itemQty}>20 Kg Bundle</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.primaryActionBtn}
-              onPress={handleNextStage}
-            >
-              <Text style={styles.primaryActionBtnText}>✓ Confirm Pickup & Start Delivery →</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ── STAGE 3: Out for Delivery (Customer Site Navigation) ── */}
-        {stage === 'out_for_delivery' && (
-          <View style={styles.card}>
-            <Text style={styles.cardHeader}>CUSTOMER DELIVERY SITE</Text>
-            <View style={styles.locRow}>
-              <View style={[styles.iconCircle, { backgroundColor: '#FEE2E2' }]}>
-                <Text style={{ fontSize: 20 }}>🏗️</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.locTitle}>Ravi Kumar</Text>
-                <Text style={styles.locSub}>Site: Gokul Construction, Madhapur, Hyderabad</Text>
-                <Text style={styles.distanceBadge}>5.6 km • Remaining ETA: 15 min</Text>
-              </View>
+          <View style={styles.manifestRow}>
+            <PackageCheck size={18} color={colors.primary} strokeWidth={2} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.manifestItemName}>
+                Tata Tiscon 550D TMT Rebars (12mm)
+              </Text>
+              <Text style={styles.manifestQty}>5 Bundles (200 kg)</Text>
             </View>
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.navBtn}
-                onPress={() => Alert.alert('GPS Navigation', 'Launching turn-by-turn route to Gokul Construction')}
-              >
-                <Text style={styles.navBtnText}>🧭 Navigate</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.primaryActionBtn}
-                onPress={handleNextStage}
-              >
-                <Text style={styles.primaryActionBtnText}>Arrived at Site →</Text>
-              </TouchableOpacity>
-            </View>
+            <CheckCircle2 size={18} color={colors.success} strokeWidth={2} />
           </View>
-        )}
+        </View>
 
-        {/* ── STAGE 4: Arrived at Customer (OTP Verification) ── */}
+        {/* ── Customer Verification OTP Box (if at site) ── */}
         {stage === 'arrived_at_customer' && (
-          <View style={styles.card}>
-            <Text style={styles.cardHeader}>CUSTOMER OTP VERIFICATION</Text>
-            <Text style={styles.checkInstruction}>
-              Ask customer Ravi Kumar for the 4-digit delivery verification OTP.
-            </Text>
-
-            <View style={styles.otpInputWrapper}>
-              <TextInput
-                style={styles.otpInput}
-                value={otpInput}
-                onChangeText={setOtpInput}
-                keyboardType="numeric"
-                maxLength={4}
-                placeholder="4821"
-                placeholderTextColor="#9CA3AF"
-              />
+          <View style={styles.otpCard}>
+            <View style={styles.otpHeader}>
+              <KeyRound size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={styles.otpHeading}>Enter Customer 4-Digit PIN</Text>
             </View>
-
-            <TouchableOpacity
-              style={styles.primaryActionBtn}
-              onPress={handleNextStage}
-            >
-              <Text style={styles.primaryActionBtnText}>🎉 Complete Delivery (₹680)</Text>
-            </TouchableOpacity>
+            <Text style={styles.otpInstructions}>
+              Ask the receiving engineer at site for their 4-digit code.
+            </Text>
+            <TextInput
+              style={styles.otpInput}
+              value={otpInput}
+              onChangeText={setOtpInput}
+              keyboardType="numeric"
+              maxLength={4}
+              placeholder="4821"
+              placeholderTextColor={colors.textTertiary}
+            />
           </View>
         )}
 
-        {/* Order Details Mini Card */}
-        <View style={styles.miniCard}>
-          <View style={styles.miniRow}>
-            <Text style={styles.miniLabel}>Order ID: BK-250531-00125</Text>
-            <Text style={styles.miniRating}>⭐ 4.8 Rating</Text>
-          </View>
-          <Text style={styles.miniItems}>Items: 10 Bags, 20 Kg, +1 more</Text>
-        </View>
-
-        <View style={{ height: 60 }} />
+        <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* ── Bottom Sticky Stage CTA ── */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={styles.stageActionBtn}
+          onPress={handleNextStage}
+          activeOpacity={0.88}
+        >
+          <Text style={styles.stageActionBtnText}>
+            {stage === 'going_to_pickup'
+              ? 'Arrived at Store ✓'
+              : stage === 'arrived_at_pickup'
+              ? 'Confirm Loading & Start Trip →'
+              : stage === 'out_for_delivery'
+              ? 'Arrived at Site ✓'
+              : 'Verify PIN & Complete Delivery'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
-const topInset = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 44;
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  topBar: {
-    paddingTop: topInset + 4,
-    paddingBottom: spacing.sm + 2,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.white,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-    ...shadows.sm,
-  },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: radii.full,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topBarTitle: {
-    fontSize: typography.fontSizes.sm + 2,
-    fontWeight: typography.weights.extrabold,
-    color: '#111827',
-  },
-  stagesStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  stageStep: {
-    alignItems: 'center',
-    gap: 2,
-  },
-  stageStepActive: {
-    opacity: 1,
-  },
-  stepNum: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#FF6B00',
-    color: colors.white,
-    fontSize: 11,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  stepLabel: {
-    fontSize: 9,
-    color: '#374151',
-    fontWeight: 'bold',
-  },
-  stepConnector: {
-    flex: 1,
-    height: 2,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 4,
-    marginBottom: 10,
-  },
-  stepConnectorActive: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: colors.background,
   },
   scrollContent: {
-    padding: spacing.md,
+    padding: spacing.base,
     gap: spacing.md,
   },
-  mapContainer: {
-    height: 240,
-    backgroundColor: '#E8EDF2',
-    borderRadius: radii.xl,
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-  },
-  mapRoadH1: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
-    height: 12,
-    backgroundColor: colors.white,
-    opacity: 0.8,
-  },
-  mapRoadH2: {
-    position: 'absolute',
-    bottom: 60,
-    left: 0,
-    right: 0,
-    height: 14,
-    backgroundColor: colors.white,
-    opacity: 0.8,
-  },
-  mapRoadV1: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '50%',
-    width: 14,
-    backgroundColor: colors.white,
-    opacity: 0.8,
-  },
-  mapAreaLabel1: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: 'bold',
-  },
-  mapAreaLabel2: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: 'bold',
-  },
-  mapAreaLabel3: {
-    position: 'absolute',
-    top: 15,
-    right: 40,
-    fontSize: 11,
-    color: '#1E293B',
-    fontWeight: typography.weights.extrabold,
-  },
-  routePathLine: {
-    position: 'absolute',
-    top: 30,
-    bottom: 50,
-    left: '48%',
-    width: 4,
-    backgroundColor: '#FF6B00',
-    borderRadius: 2,
-    transform: [{ rotate: '-12deg' }],
-  },
-  depotMarker: {
-    position: 'absolute',
-    bottom: 50,
-    left: '44%',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 107, 0, 0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  depotDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#FF6B00',
-    borderWidth: 2,
-    borderColor: colors.white,
-  },
-  etaPill: {
-    position: 'absolute',
-    top: '45%',
-    left: '48%',
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.full,
-    ...shadows.sm,
-  },
-  etaText: {
-    color: colors.white,
-    fontSize: 10,
-    fontWeight: typography.weights.extrabold,
-  },
-  destMarker: {
-    position: 'absolute',
-    top: 20,
-    left: '50%',
-  },
-  destMarkerPin: {
-    alignItems: 'center',
-  },
-  card: {
-    backgroundColor: colors.white,
+
+  // ── Stage Track ──
+  stageTrackerCard: {
+    backgroundColor: colors.surface,
     borderRadius: radii.xl,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    gap: spacing.sm,
+    borderColor: colors.borderLight,
     ...shadows.sm,
   },
-  cardHeader: {
-    fontSize: 10,
-    fontWeight: typography.weights.extrabold,
-    color: '#9CA3AF',
-    letterSpacing: 0.6,
-  },
-  locRow: {
+  stageTrackRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-  },
-  iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.lg,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  locTitle: {
-    fontSize: typography.fontSizes.sm + 1,
-    fontWeight: typography.weights.extrabold,
-    color: '#111827',
-  },
-  locSub: {
-    fontSize: 10,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  distanceBadge: {
-    fontSize: 10,
-    fontWeight: typography.weights.bold,
-    color: '#059669',
-    marginTop: 4,
-  },
-  checkInstruction: {
-    fontSize: typography.fontSizes.xs,
-    color: '#4B5563',
-    lineHeight: 16,
-  },
-  checkItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: radii.lg,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: spacing.sm,
-  },
-  checkIcon: {
-    fontSize: 18,
-  },
-  itemName: {
-    fontSize: typography.fontSizes.xs + 1,
-    fontWeight: typography.weights.bold,
-    color: '#111827',
-  },
-  itemQty: {
-    fontSize: 10,
-    color: '#6B7280',
-    marginTop: 1,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  navBtn: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-    borderRadius: radii.lg,
-    paddingVertical: spacing.sm + 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  navBtnText: {
-    fontSize: typography.fontSizes.xs,
-    fontWeight: typography.weights.bold,
-    color: '#374151',
-  },
-  primaryActionBtn: {
-    flex: 1.5,
-    backgroundColor: '#FF6B00',
-    borderRadius: radii.lg,
-    paddingVertical: spacing.sm + 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.sm,
-  },
-  primaryActionBtnText: {
-    color: colors.white,
-    fontSize: typography.fontSizes.xs + 1,
-    fontWeight: typography.weights.extrabold,
-  },
-  otpInputWrapper: {
-    alignItems: 'center',
-    marginVertical: spacing.sm,
-  },
-  otpInput: {
-    width: 140,
-    height: 52,
-    backgroundColor: '#F8FAFC',
-    borderRadius: radii.lg,
-    borderWidth: 2,
-    borderColor: '#FF6B00',
-    fontSize: typography.fontSizes.xl,
-    fontWeight: typography.weights.extrabold,
-    textAlign: 'center',
-    letterSpacing: 8,
-    color: '#0F172A',
-  },
-  miniCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: radii.lg,
-    padding: spacing.sm + 2,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 2,
-  },
-  miniRow: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  miniLabel: {
+  stagePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radii.full,
+    backgroundColor: colors.surfaceSecondary,
+  },
+  stagePillActive: {
+    backgroundColor: colors.primary,
+  },
+  stageText: {
+    fontSize: typography.fontSizes.caption,
+    fontWeight: typography.weights.bold,
+    color: colors.white,
+  },
+  stageLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: colors.border,
+    marginHorizontal: 4,
+  },
+
+  // ── Target Card ──
+  targetCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    padding: spacing.base,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    ...shadows.sm,
+  },
+  targetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  targetTag: {
+    backgroundColor: colors.primaryFaded,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.sm,
+  },
+  targetTagText: {
     fontSize: 10,
     fontWeight: typography.weights.bold,
-    color: '#475569',
+    color: colors.primary,
+    letterSpacing: 0.5,
   },
-  miniRating: {
-    fontSize: 10,
+  targetDistance: {
+    fontSize: typography.fontSizes.caption,
     fontWeight: typography.weights.bold,
-    color: '#D97706',
+    color: colors.textSecondary,
   },
-  miniItems: {
-    fontSize: 10,
-    color: '#64748B',
+  targetName: {
+    fontSize: typography.fontSizes.body,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
   },
+  targetAddress: {
+    fontSize: typography.fontSizes.caption,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginTop: 2,
+    marginBottom: spacing.md,
+  },
+  targetActionsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  navActionBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    ...shadows.sm,
+  },
+  navActionText: {
+    fontSize: typography.fontSizes.bodySmall,
+    fontWeight: typography.weights.bold,
+    color: colors.white,
+  },
+  callActionBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: colors.primaryFaded,
+    borderWidth: 1,
+    borderColor: 'rgba(223, 103, 51, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Manifest ──
+  manifestCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    padding: spacing.base,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    ...shadows.sm,
+  },
+  manifestHeading: {
+    fontSize: typography.fontSizes.bodySmall,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  manifestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  manifestItemName: {
+    fontSize: typography.fontSizes.bodySmall,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
+  },
+  manifestQty: {
+    fontSize: typography.fontSizes.caption,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  manifestDivider: {
+    height: 1,
+    backgroundColor: colors.borderLight,
+    marginVertical: spacing.sm,
+  },
+
+  // ── OTP Card ──
+  otpCard: {
+    backgroundColor: colors.pillActiveBg,
+    borderRadius: radii.xl,
+    padding: spacing.base,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    alignItems: 'center',
+  },
+  otpHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  otpHeading: {
+    fontSize: typography.fontSizes.body,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  otpInstructions: {
+    fontSize: typography.fontSizes.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: spacing.md,
+  },
+  otpInput: {
+    width: 160,
+    height: 52,
+    backgroundColor: colors.white,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: typography.weights.bold,
+    letterSpacing: 8,
+    color: colors.text,
+  },
+
+  // ── Completed State ──
   completedContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
-    backgroundColor: colors.white,
   },
   completedCheckCircle: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#ECFDF5',
-    borderWidth: 3,
-    borderColor: '#10B981',
+    backgroundColor: '#E5F9EE',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  completedCheckEmoji: {
-    fontSize: 40,
-    color: '#059669',
-    fontWeight: 'bold',
+    marginBottom: spacing.base,
   },
   completedTitle: {
-    fontSize: typography.fontSizes.xl,
-    fontWeight: typography.weights.extrabold,
-    color: '#111827',
+    fontSize: typography.fontSizes.h2,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
   },
   completedSub: {
-    fontSize: typography.fontSizes.xs,
-    color: '#6B7280',
+    fontSize: typography.fontSizes.bodySmall,
+    color: colors.textSecondary,
     marginTop: 4,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   completedSummaryCard: {
     width: '100%',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surface,
     borderRadius: radii.xl,
-    padding: spacing.md + 4,
+    padding: spacing.base,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.borderLight,
     gap: spacing.sm,
-    marginBottom: spacing.xl,
+    ...shadows.sm,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    paddingVertical: 3,
   },
   summaryLabel: {
-    fontSize: typography.fontSizes.xs,
-    color: '#6B7280',
+    fontSize: typography.fontSizes.bodySmall,
+    color: colors.textSecondary,
   },
   summaryVal: {
-    fontSize: typography.fontSizes.xs,
-    fontWeight: typography.weights.extrabold,
-    color: '#111827',
+    fontSize: typography.fontSizes.bodySmall,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
   },
   summaryDivider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.borderLight,
     marginVertical: 4,
   },
   earningsLabel: {
-    fontSize: typography.fontSizes.sm,
-    fontWeight: typography.weights.extrabold,
-    color: '#111827',
+    fontSize: typography.fontSizes.body,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
   },
   earningsVal: {
-    fontSize: typography.fontSizes.lg,
-    fontWeight: typography.weights.extrabold,
-    color: '#059669',
+    fontSize: typography.fontSizes.h3,
+    fontWeight: typography.weights.bold,
+    color: colors.success,
   },
   nextDeliveryBtn: {
+    marginTop: spacing.xl,
     width: '100%',
-    backgroundColor: '#FF6B00',
-    borderRadius: radii.xl,
-    paddingVertical: spacing.md,
+    height: 50,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
     ...shadows.md,
   },
   nextDeliveryBtnText: {
+    fontSize: typography.fontSizes.body,
+    fontWeight: typography.weights.bold,
     color: colors.white,
-    fontSize: typography.fontSizes.sm + 1,
-    fontWeight: typography.weights.extrabold,
+  },
+
+  // ── Bottom Bar ──
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.sm,
+    paddingBottom: Platform.OS === 'ios' ? 28 : spacing.base,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    ...shadows.lg,
+  },
+  stageActionBtn: {
+    height: 48,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stageActionBtnText: {
+    fontSize: typography.fontSizes.body,
+    fontWeight: typography.weights.bold,
+    color: colors.white,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,25 @@ import {
   ScrollView,
 } from 'react-native';
 import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
-import { mockSavedAddresses } from '../../services/mockData';
+import { useAppStore } from '../../store';
 import GradientAppHeader from '../../components/GradientAppHeader';
 
 export default function LocationSelection({ navigation }: any) {
-  const [selectedAddressId, setSelectedAddressId] = useState<string>('addr_1');
+  const { savedAddresses, fetchAddresses } = useAppStore();
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    fetchAddresses().catch(() => {});
+  }, []);
+
+  const addressList = savedAddresses;
+
+  useEffect(() => {
+    if (addressList.length > 0 && !selectedAddressId) {
+      setSelectedAddressId(addressList[0].id || addressList[0].label || 'addr_0');
+    }
+  }, [addressList]);
 
   return (
     <View style={styles.root}>
@@ -22,6 +35,7 @@ export default function LocationSelection({ navigation }: any) {
         title="Select Delivery Location"
         subtitle="Choose your construction site or home"
         showBack={true}
+        showSearch={false}
         onBackPress={() => navigation.goBack()}
       />
 
@@ -65,33 +79,42 @@ export default function LocationSelection({ navigation }: any) {
         <View style={styles.savedAddressesSection}>
           <Text style={styles.savedAddressesHeader}>Saved Addresses</Text>
 
-          {mockSavedAddresses.map((addr) => {
-            const isSelected = selectedAddressId === addr.id;
-            return (
-              <TouchableOpacity
-                key={addr.id}
-                style={[styles.addressItem, isSelected && styles.addressItemActive]}
-                onPress={() => setSelectedAddressId(addr.id)}
-                activeOpacity={0.85}
-              >
-                <View style={styles.addressLeft}>
-                  <View style={styles.addressIconCircle}>
-                    <Text style={styles.addressIconEmoji}>{addr.tag === 'Home' ? '🏠' : '🏗️'}</Text>
+          {addressList.length === 0 ? (
+            <View style={{ paddingVertical: spacing.md, alignItems: 'center' }}>
+              <Text style={{ fontSize: typography.fontSizes.bodySmall, color: colors.textSecondary }}>
+                No saved addresses found in your account.
+              </Text>
+            </View>
+          ) : (
+            addressList.map((addr: any, idx: number) => {
+              const addrId = addr.id || `addr_${idx}`;
+              const isSelected = selectedAddressId === addrId || (idx === 0 && !selectedAddressId);
+              return (
+                <TouchableOpacity
+                  key={addrId}
+                  style={[styles.addressItem, isSelected && styles.addressItemActive]}
+                  onPress={() => setSelectedAddressId(addrId)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.addressLeft}>
+                    <View style={styles.addressIconCircle}>
+                      <Text style={styles.addressIconEmoji}>{addr.label === 'Home' || addr.tag === 'Home' ? '🏠' : '🏗️'}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.addressLabel}>{addr.label || 'Site'}</Text>
+                      <Text style={styles.addressSub}>{addr.city || addr.address || 'Hyderabad'}</Text>
+                      <Text style={styles.addressDetails} numberOfLines={1}>{addr.line1 || addr.details || 'Hyderabad'}</Text>
+                    </View>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.addressLabel}>{addr.label}</Text>
-                    <Text style={styles.addressSub}>{addr.address}</Text>
-                    <Text style={styles.addressDetails} numberOfLines={1}>{addr.details}</Text>
-                  </View>
-                </View>
 
-                {/* Radio Circle */}
-                <View style={[styles.radioCircle, isSelected && styles.radioCircleActive]}>
-                  {isSelected && <View style={styles.radioDot} />}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+                  {/* Radio Circle */}
+                  <View style={[styles.radioCircle, isSelected && styles.radioCircleActive]}>
+                    {isSelected && <View style={styles.radioDot} />}
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
       </ScrollView>
 

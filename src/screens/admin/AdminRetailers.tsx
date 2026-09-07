@@ -13,9 +13,13 @@ const SUBSCRIPTION_LABELS: Record<string, string> = {
 const subscriptions = ['Basic', 'Professional', 'Enterprise'];
 
 export default function AdminRetailers() {
-  const { retailers } = useAppStore();
+  const { retailers, fetchStores } = useAppStore();
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'active' | 'suspended'>('all');
   const [suspendedIds, setSuspendedIds] = useState<Set<string>>(new Set());
+
+  React.useEffect(() => {
+    fetchStores().catch(() => {});
+  }, []);
 
   const filtered = retailers.filter((r) => {
     if (selectedFilter === 'suspended') return suspendedIds.has(r.id);

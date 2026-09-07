@@ -22,7 +22,7 @@ const PROFILE_MENU_ITEMS = [
 ];
 
 export default function DriverProfile({ navigation }: any) {
-  const { setCurrentRole } = useAppStore();
+  const { setCurrentRole, currentUser, logoutUser } = useAppStore();
 
   const handleLogout = () => {
     Alert.alert(
@@ -30,7 +30,14 @@ export default function DriverProfile({ navigation }: any) {
       'Are you sure you want to end your delivery shift?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: () => setCurrentRole('customer') },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await logoutUser();
+            setCurrentRole('customer');
+          },
+        },
       ]
     );
   };
@@ -58,8 +65,8 @@ export default function DriverProfile({ navigation }: any) {
           </View>
         </View>
 
-        <Text style={styles.driverName}>Mahesh Kumar</Text>
-        <Text style={styles.driverPhone}>+91 98765 43210</Text>
+        <Text style={styles.driverName}>{currentUser?.name || 'Mahesh Kumar'}</Text>
+        <Text style={styles.driverPhone}>{currentUser?.phone ? `+91 ${currentUser.phone}` : '+91 98765 43210'}</Text>
 
         {/* Rating & Online Pill */}
         <View style={styles.badgeRow}>

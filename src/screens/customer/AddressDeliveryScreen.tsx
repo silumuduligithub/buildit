@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,31 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Platform,
 } from 'react-native';
 import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
-import { mockSavedAddresses } from '../../services/mockData';
+import { useAppStore } from '../../store';
 import GradientAppHeader from '../../components/GradientAppHeader';
 
 export default function AddressDeliveryScreen({ route, navigation }: any) {
   const totalAmount = route?.params?.totalAmount || 6750;
-  const [selectedAddressId, setSelectedAddressId] = useState<string>('addr_1');
+  const { savedAddresses, fetchAddresses, syncAddAddress } = useAppStore();
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [deliveryInstructions, setDeliveryInstructions] = useState('Gate open. Call before delivery.');
 
-  const selectedAddress = mockSavedAddresses.find((a) => a.id === selectedAddressId) || mockSavedAddresses[0];
+  useEffect(() => {
+    fetchAddresses().catch(() => {});
+  }, []);
+
+  const addressList = savedAddresses;
+  const selectedAddress =
+    addressList.find((a: any) => (a.id || a.label) === selectedAddressId) || addressList[0];
+
+  useEffect(() => {
+    if (addressList.length > 0 && !selectedAddressId) {
+      setSelectedAddressId(addressList[0].id || addressList[0].label || 'addr_0');
+    }
+  }, [addressList]);
 
   return (
     <View style={styles.root}>
@@ -26,43 +40,68 @@ export default function AddressDeliveryScreen({ route, navigation }: any) {
         title="Delivery Address"
         subtitle="Step 2 of 3: Checkout"
         showBack={true}
+        showSearch={false}
         onBackPress={() => navigation.goBack()}
         rightIcon="➕"
-        onRightPress={() => Alert.alert('Add Address', 'Enter new construction delivery site')}
+        onRightPress={() => navigation.navigate('LocationSelect')}
       />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.pageSectionTitle}>Saved Addresses</Text>
+<<<<<<< HEAD
         {mockSavedAddresses.map((addr) => {
           const isSelected = selectedAddressId === addr.id;
           return (
+=======
+
+        {addressList.length === 0 ? (
+          <View style={styles.emptyAddressCard}>
+            <Text style={styles.emptyAddressTitle}>No Saved Addresses Found</Text>
+            <Text style={styles.emptyAddressSub}>
+              Please add a delivery address to proceed with your order.
+            </Text>
+>>>>>>> c2d4ce9 (api intigrated)
             <TouchableOpacity
-              key={addr.id}
-              style={[styles.addressCard, isSelected && styles.addressCardActive]}
-              onPress={() => setSelectedAddressId(addr.id)}
-              activeOpacity={0.88}
+              style={styles.addAddressBtn}
+              onPress={() => navigation.navigate('LocationSelect')}
+              activeOpacity={0.85}
             >
-              <View style={styles.cardTopRow}>
-                <View style={styles.labelBadge}>
-                  <Text style={styles.labelText}>{addr.label}</Text>
-                </View>
-                <Text style={styles.addressArea}>{addr.address}</Text>
-
-                <View style={[styles.radioCircle, isSelected && styles.radioCircleActive]}>
-                  {isSelected && <View style={styles.radioDot} />}
-                </View>
-              </View>
-
-              <Text style={styles.addressDetails}>{addr.details}</Text>
-              <Text style={styles.contactName}>{addr.recipientName} - {addr.phone}</Text>
-
-              <View style={styles.deliveryBadgeRow}>
-                <Text style={styles.deliveryTimeText}>⚡ Delivery in {addr.deliveryTime}</Text>
-                <Text style={styles.freeBadgeText}>FREE</Text>
-              </View>
+              <Text style={styles.addAddressBtnText}>+ Add New Address</Text>
             </TouchableOpacity>
-          );
-        })}
+          </View>
+        ) : (
+          addressList.map((addr: any, idx: number) => {
+            const addrId = addr.id || `addr_${idx}`;
+            const isSelected = selectedAddressId === addrId || (idx === 0 && !selectedAddressId);
+            return (
+              <TouchableOpacity
+                key={addrId}
+                style={[styles.addressCard, isSelected && styles.addressCardActive]}
+                onPress={() => setSelectedAddressId(addrId)}
+                activeOpacity={0.88}
+              >
+                <View style={styles.cardTopRow}>
+                  <View style={styles.labelBadge}>
+                    <Text style={styles.labelText}>{addr.label || 'Site'}</Text>
+                  </View>
+                  <Text style={styles.addressArea}>{addr.city || addr.address || 'Hyderabad'}</Text>
+
+                  <View style={[styles.radioCircle, isSelected && styles.radioCircleActive]}>
+                    {isSelected && <View style={styles.radioDot} />}
+                  </View>
+                </View>
+
+                <Text style={styles.addressDetails}>{addr.line1 || addr.details || 'Hyderabad'}</Text>
+                <Text style={styles.contactName}>{addr.name || 'Customer'} - {addr.phone || ''}</Text>
+
+                <View style={styles.deliveryBadgeRow}>
+                  <Text style={styles.deliveryTimeText}>⚡ Delivery in {addr.deliveryTime || '25-30 min'}</Text>
+                  <Text style={styles.freeBadgeText}>FREE</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })
+        )}
 
         {/* Delivery Instructions Box */}
         <View style={styles.instructionsSection}>
@@ -85,7 +124,8 @@ export default function AddressDeliveryScreen({ route, navigation }: any) {
       {/* Bottom Continue Bar */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
-          style={styles.continueButton}
+          style={[styles.continueButton, !selectedAddress && styles.continueButtonDisabled]}
+          disabled={!selectedAddress}
           onPress={() =>
             navigation.navigate('Payment', {
               totalAmount,
@@ -95,7 +135,9 @@ export default function AddressDeliveryScreen({ route, navigation }: any) {
           }
           activeOpacity={0.88}
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={[styles.continueText, !selectedAddress && styles.continueTextDisabled]}>
+            {selectedAddress ? 'Continue to Payment' : 'Add Address to Continue'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -231,8 +273,13 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   bottomBar: {
+    ...shadows.lg,
     position: 'absolute',
+<<<<<<< HEAD
     bottom: 78,
+=======
+    bottom: Platform.OS === 'ios' ? 78 : 62,
+>>>>>>> c2d4ce9 (api intigrated)
     left: 0,
     right: 0,
     padding: spacing.md,
@@ -241,7 +288,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
-    ...shadows.lg,
+    zIndex: 999,
   },
   continueButton: {
     backgroundColor: colors.primary,
@@ -251,9 +298,51 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadows.md,
   },
+  continueButtonDisabled: {
+    backgroundColor: colors.surfaceSecondary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   continueText: {
     color: colors.white,
     fontSize: typography.fontSizes.sm,
     fontWeight: typography.weights.extrabold,
+  },
+  continueTextDisabled: {
+    color: colors.textTertiary,
+  },
+  emptyAddressCard: {
+    backgroundColor: colors.surface,
+    padding: spacing.xl,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    alignItems: 'center',
+    gap: spacing.sm,
+    ...shadows.sm,
+  },
+  emptyAddressTitle: {
+    fontSize: typography.fontSizes.body,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  emptyAddressSub: {
+    fontSize: typography.fontSizes.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  addAddressBtn: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.primaryFaded,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  addAddressBtnText: {
+    fontSize: typography.fontSizes.bodySmall,
+    fontWeight: typography.weights.bold,
+    color: colors.primary,
   },
 });

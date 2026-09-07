@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
 import { useAppStore } from '../../store';
@@ -24,14 +25,19 @@ export default function PaymentScreen({ route, navigation }: any) {
   const deliveryAddress = route?.params?.address;
   const [selectedMethod, setSelectedMethod] = useState('upi');
   const [expandedMethod, setExpandedMethod] = useState<string | null>(null);
+<<<<<<< HEAD
+=======
+  const [isProcessing, setIsProcessing] = useState(false);
+>>>>>>> c2d4ce9 (api intigrated)
 
-  const { cart, placeOrder, clearCart } = useAppStore();
+  const { cart, placeOrder, clearCart, syncClearCart, currentUser } = useAppStore();
 
-  const handlePay = () => {
+  const handlePay = async () => {
+    setIsProcessing(true);
     const orderId = `BK-${Date.now().toString().slice(-6)}`;
     const newOrder = {
       id: orderId,
-      customerId: 'c1',
+      customerId: currentUser?.id || 'c1',
       retailerId: cart[0]?.retailer?.id || 's_sri_sai',
       status: 'confirmed' as const,
       items: [...cart],
@@ -41,11 +47,11 @@ export default function PaymentScreen({ route, navigation }: any) {
       deliveryFee: 0,
       deliveryAddress: {
         label: deliveryAddress?.label || 'Home',
-        name: deliveryAddress?.recipientName || 'Ravi Kumar',
-        phone: deliveryAddress?.phone || '9876543210',
-        line1: deliveryAddress?.details || 'Plot No. 45, Street 2, Near RTO Office, Kondapur, Hyderabad',
-        city: 'Hyderabad',
-        pincode: '500084',
+        name: deliveryAddress?.recipientName || deliveryAddress?.name || currentUser?.name || 'Ravi Kumar',
+        phone: deliveryAddress?.phone || currentUser?.phone || '9876543210',
+        line1: deliveryAddress?.line1 || deliveryAddress?.details || 'Plot No. 45, Street 2, Near RTO Office, Kondapur, Hyderabad',
+        city: deliveryAddress?.city || 'Hyderabad',
+        pincode: deliveryAddress?.pincode || '500084',
       },
       deliveryType: 'express' as const,
       estimatedDeliveryMins: 25,
@@ -58,9 +64,14 @@ export default function PaymentScreen({ route, navigation }: any) {
     };
 
     placeOrder(newOrder);
-    clearCart();
-
-    navigation.replace('OrderTracking', { orderId: newOrder.id, order: newOrder });
+    try {
+      await syncClearCart();
+    } catch {
+      clearCart();
+    } finally {
+      setIsProcessing(false);
+      navigation.replace('OrderTracking', { orderId: newOrder.id, order: newOrder });
+    }
   };
 
   return (
@@ -70,6 +81,7 @@ export default function PaymentScreen({ route, navigation }: any) {
         title="Payment Options"
         subtitle="Step 3 of 3: Secure Payment"
         showBack={true}
+        showSearch={false}
         onBackPress={() => navigation.goBack()}
         rightIcon="🔒"
       />
@@ -145,9 +157,18 @@ export default function PaymentScreen({ route, navigation }: any) {
         <TouchableOpacity
           style={styles.payButton}
           onPress={handlePay}
+          disabled={isProcessing}
           activeOpacity={0.88}
         >
+<<<<<<< HEAD
           <Text style={styles.payButtonText}>🔒  Pay ₹{totalAmount.toLocaleString('en-IN')} Securely  →</Text>
+=======
+          {isProcessing ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <Text style={styles.payButtonText}>🔒  Pay ₹{totalAmount.toLocaleString('en-IN')} Securely  →</Text>
+          )}
+>>>>>>> c2d4ce9 (api intigrated)
         </TouchableOpacity>
       </View>
     </View>

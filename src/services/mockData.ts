@@ -1,56 +1,234 @@
 import { Product, Retailer, RetailerProductOffer } from '../types';
 
-export interface CategoryItem {
+export interface SubCategoryItem {
   id: string;
   name: string;
-  subcategories: string;
-  icon: string;
+  itemCount: number;
+  imageUrl: string;
+  badge?: string;
+  description: string;
 }
 
-export const buildKartCategories: CategoryItem[] = [
+export interface DetailedCategoryItem {
+  id: string;
+  name: string;
+  subcategoriesText: string;
+  icon: string;
+  imageUrl: string;
+  totalProducts: number;
+  subcategories: SubCategoryItem[];
+}
+
+export const detailedCategories: DetailedCategoryItem[] = [
   {
     id: 'cat_structural',
     name: 'Structural Materials',
-    subcategories: 'Cement, Steel, Sand, Bricks...',
+    subcategoriesText: 'Cement, TMT Steel, Sand, Bricks, BRC Mesh',
     icon: '🏗️',
-  },
-  {
-    id: 'cat_electrical',
-    name: 'Electrical',
-    subcategories: 'Wires, Switches, MCBs, Pipes...',
-    icon: '⚡',
-  },
-  {
-    id: 'cat_plumbing',
-    name: 'Plumbing',
-    subcategories: 'Pipes, Fittings, Tanks, Taps...',
-    icon: '🚿',
+    imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?w=600&auto=format&fit=crop&q=80',
+    totalProducts: 54,
+    subcategories: [
+      {
+        id: 'sub_cement',
+        name: 'Cement & Concrete',
+        itemCount: 16,
+        badge: 'Best Seller',
+        imageUrl: 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=400&auto=format&fit=crop&q=80',
+        description: 'OPC 53, PPC, Ready-Mix, Waterproof Cement',
+      },
+      {
+        id: 'sub_steel',
+        name: 'TMT Steel & Rebars',
+        itemCount: 14,
+        badge: 'Top Rated',
+        imageUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=400&auto=format&fit=crop&q=80',
+        description: 'Tata Tiscon 550D, JSW 10/12/16mm, Binding Wire',
+      },
+      {
+        id: 'sub_sand',
+        name: 'Sand & Aggregates',
+        itemCount: 8,
+        imageUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&auto=format&fit=crop&q=80',
+        description: 'M-Sand, P-Sand, 20mm Blue Metal, River Sand',
+      },
+      {
+        id: 'sub_bricks',
+        name: 'Bricks & AAC Blocks',
+        itemCount: 10,
+        imageUrl: 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=400&auto=format&fit=crop&q=80',
+        description: 'Wirecut Red Bricks, Fly Ash, Lightweight AAC',
+      },
+      {
+        id: 'sub_brc',
+        name: 'BRC & Structural Tubes',
+        itemCount: 6,
+        imageUrl: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=400&auto=format&fit=crop&q=80',
+        description: 'BRC Mesh Sheets, Square Hollow Sections',
+      },
+    ],
   },
   {
     id: 'cat_finishing',
-    name: 'Finishing',
-    subcategories: 'Paints, Tiles, Sanitaryware...',
+    name: 'Finishing & Paints',
+    subcategoriesText: 'Paints, Wall Putty, Tiles, Waterproofing',
     icon: '🎨',
+    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=80',
+    totalProducts: 38,
+    subcategories: [
+      {
+        id: 'sub_paints',
+        name: 'Exterior & Interior Paints',
+        itemCount: 14,
+        badge: 'Popular',
+        imageUrl: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&auto=format&fit=crop&q=80',
+        description: 'Asian Paints Apex, Royale, Enamel, Distemper',
+      },
+      {
+        id: 'sub_putty',
+        name: 'Wall Putty & Primers',
+        itemCount: 8,
+        imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&auto=format&fit=crop&q=80',
+        description: 'Birla White Care Putty, Damp Proof Primer',
+      },
+      {
+        id: 'sub_tiles',
+        name: 'Tiles & Adhesives',
+        itemCount: 10,
+        imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&auto=format&fit=crop&q=80',
+        description: 'Vitrified Floor Tiles, Tile Fix Adhesives, Grout',
+      },
+      {
+        id: 'sub_waterproofing',
+        name: 'Waterproofing Chemicals',
+        itemCount: 6,
+        imageUrl: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&auto=format&fit=crop&q=80',
+        description: 'Dr. Fixit LW+, Damp Block 2K, Terrace Coating',
+      },
+    ],
   },
   {
     id: 'cat_hardware',
-    name: 'Hardware',
-    subcategories: 'Tools, Fasteners, Safety, Locks...',
-    icon: '🔩',
+    name: 'Hardware & Tools',
+    subcategoriesText: 'Power Tools, Hand Tools, Fasteners, Safety',
+    icon: '🔧',
+    imageUrl: 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=600&auto=format&fit=crop&q=80',
+    totalProducts: 42,
+    subcategories: [
+      {
+        id: 'sub_powertools',
+        name: 'Power Tools',
+        itemCount: 12,
+        badge: 'Pro Grade',
+        imageUrl: 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=400&auto=format&fit=crop&q=80',
+        description: 'Bosch Impact Drills, Angle Grinders, Cutters',
+      },
+      {
+        id: 'sub_handtools',
+        name: 'Hand & Masonry Tools',
+        itemCount: 15,
+        imageUrl: 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=400&auto=format&fit=crop&q=80',
+        description: 'Masonry Trowels, Spirit Levels, Measuring Tapes',
+      },
+      {
+        id: 'sub_fasteners',
+        name: 'Fasteners & Anchor Bolts',
+        itemCount: 9,
+        imageUrl: 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=400&auto=format&fit=crop&q=80',
+        description: 'Wedge Anchors, Concrete Screws, Nails',
+      },
+      {
+        id: 'sub_safety',
+        name: 'Site Safety & PPE',
+        itemCount: 6,
+        imageUrl: 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=400&auto=format&fit=crop&q=80',
+        description: 'Safety Helmets, High-Vis Vests, Safety Shoes',
+      },
+    ],
   },
   {
-    id: 'cat_doors',
-    name: 'Doors & Windows',
-    subcategories: 'Doors, Windows, Accessories...',
-    icon: '🚪',
+    id: 'cat_electrical',
+    name: 'Electrical & Cables',
+    subcategoriesText: 'Wires, Switches, MCBs, Conduit Pipes',
+    icon: '⚡',
+    imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80',
+    totalProducts: 36,
+    subcategories: [
+      {
+        id: 'sub_wires',
+        name: 'Wires & Flexible Cables',
+        itemCount: 12,
+        imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&auto=format&fit=crop&q=80',
+        description: 'Havells 2.5/4.0 sq mm, Polycab FR Copper',
+      },
+      {
+        id: 'sub_switches',
+        name: 'Switches & DB Boxes',
+        itemCount: 10,
+        imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&auto=format&fit=crop&q=80',
+        description: 'Schneider Modular Switches, MCB Isolators',
+      },
+      {
+        id: 'sub_conduit',
+        name: 'PVC Conduits & Fittings',
+        itemCount: 8,
+        imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&auto=format&fit=crop&q=80',
+        description: 'Heavy Gauge Conduits, Junction Boxes, Bends',
+      },
+      {
+        id: 'sub_lighting',
+        name: 'Site Flood & LED Lights',
+        itemCount: 6,
+        imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&auto=format&fit=crop&q=80',
+        description: '50W/100W Waterproof LED Floodlights',
+      },
+    ],
   },
   {
-    id: 'cat_home',
-    name: 'Home Improvement',
-    subcategories: 'Lights, Adhesives, Others...',
-    icon: '🏡',
+    id: 'cat_plumbing',
+    name: 'Plumbing & Tanks',
+    subcategoriesText: 'CPVC Pipes, Overhead Tanks, Pumps, Valves',
+    icon: '🚿',
+    imageUrl: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&auto=format&fit=crop&q=80',
+    totalProducts: 30,
+    subcategories: [
+      {
+        id: 'sub_pipes',
+        name: 'CPVC & UPVC Pipes',
+        itemCount: 10,
+        imageUrl: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&auto=format&fit=crop&q=80',
+        description: 'Finolex SDR 11 CPVC, Heavy Drain Pipes',
+      },
+      {
+        id: 'sub_tanks',
+        name: 'Water Storage Tanks',
+        itemCount: 6,
+        imageUrl: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&auto=format&fit=crop&q=80',
+        description: 'Sintex 1000L / 500L Triple Layer Overhead Tanks',
+      },
+      {
+        id: 'sub_pumps',
+        name: 'Water Pumps & Motors',
+        itemCount: 6,
+        imageUrl: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&auto=format&fit=crop&q=80',
+        description: '1HP Submersible, Monoblock Pressure Pumps',
+      },
+      {
+        id: 'sub_fittings',
+        name: 'Valves & Brass Fittings',
+        itemCount: 8,
+        imageUrl: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&auto=format&fit=crop&q=80',
+        description: 'Brass Ball Valves, Flanges, Unions, Bib Taps',
+      },
+    ],
   },
 ];
+
+export const buildKartCategories = detailedCategories.map((c) => ({
+  id: c.id,
+  name: c.name,
+  subcategories: c.subcategoriesText,
+  icon: c.icon,
+}));
 
 export const mockProducts: Product[] = [
   {
@@ -59,7 +237,17 @@ export const mockProducts: Product[] = [
     brand: 'UltraTech',
     category: 'Structural Materials',
     unit: '50 Kg Bag',
+    imageUrl: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
     description: 'OPC 53 Grade High-Strength Cement. Ideal for heavy load RCC, high-rise buildings, bridges and plastering.',
+  },
+  {
+    name: 'Ambuja Plus Roof Special Cement',
+    id: 'p_cement_5',
+    brand: 'Ambuja',
+    category: 'Structural Materials',
+    unit: '50 Kg Bag',
+    imageUrl: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
+    description: 'Specially engineered high-density cement for slab casting, roof protection and 100% leak-proof concrete.',
   },
   {
     id: 'p_cement_2',
@@ -67,6 +255,7 @@ export const mockProducts: Product[] = [
     brand: 'Ramco',
     category: 'Structural Materials',
     unit: '50 Kg Bag',
+    imageUrl: 'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=600&auto=format&fit=crop&q=80',
     description: 'High performance blended cement specially designed for high strength concrete and faster curing.',
   },
   {
@@ -75,6 +264,7 @@ export const mockProducts: Product[] = [
     brand: 'ACC Cement',
     category: 'Structural Materials',
     unit: '50 Kg Bag',
+    imageUrl: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
     description: 'Water-repellent premium cement with micro-fillers for complete home damp-proofing and durability.',
   },
   {
@@ -83,6 +273,7 @@ export const mockProducts: Product[] = [
     brand: 'Ambuja',
     category: 'Structural Materials',
     unit: '50 Kg Bag',
+    imageUrl: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
     description: 'Specially formulated water-repelling cement to protect structures from saline and moisture attack.',
   },
   {
@@ -91,6 +282,7 @@ export const mockProducts: Product[] = [
     brand: 'Tata Tiscon',
     category: 'Structural Materials',
     unit: '12m Piece',
+    imageUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=600&auto=format&fit=crop&q=80',
     description: 'Fe 550D Super Ductile TMT Rebar with high seismic resistance and superior weldability.',
   },
   {
@@ -99,6 +291,7 @@ export const mockProducts: Product[] = [
     brand: 'JSW Steel',
     category: 'Structural Materials',
     unit: '12m Piece',
+    imageUrl: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=600&auto=format&fit=crop&q=80',
     description: 'High yield strength thermo-mechanically treated bar with excellent rib pattern for concrete grip.',
   },
   {
@@ -107,6 +300,7 @@ export const mockProducts: Product[] = [
     brand: 'Robo Silicon',
     category: 'Structural Materials',
     unit: '1 Tonne / 1000 Kg',
+    imageUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&auto=format&fit=crop&q=80',
     description: 'Double washed, zero silt manufactured sand with cubical shape for maximum concrete strength.',
   },
   {
@@ -115,6 +309,7 @@ export const mockProducts: Product[] = [
     brand: 'Standard Brick Co.',
     category: 'Structural Materials',
     unit: 'Pack of 500 Pcs',
+    imageUrl: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&auto=format&fit=crop&q=80',
     description: 'High compressive strength kiln-burnt red clay bricks with smooth edges and uniform dimensions.',
   },
   {
@@ -123,6 +318,7 @@ export const mockProducts: Product[] = [
     brand: 'Asian Paints',
     category: 'Finishing',
     unit: '20 Litre Bucket',
+    imageUrl: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=600&auto=format&fit=crop&q=80',
     description: 'Advanced anti-algal, dust-resistant exterior emulsion with 7-year performance warranty.',
   },
   {
@@ -131,6 +327,7 @@ export const mockProducts: Product[] = [
     brand: 'Finolex',
     category: 'Plumbing',
     unit: '3 Metre Length',
+    imageUrl: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&auto=format&fit=crop&q=80',
     description: 'Heavy duty hot and cold water potable piping system conforming to IS:15778.',
   },
   {
@@ -139,6 +336,7 @@ export const mockProducts: Product[] = [
     brand: 'Havells',
     category: 'Electrical',
     unit: '90 Metre Coil',
+    imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80',
     description: '100% pure electrolytic grade copper wire with HRFR insulation and oxygen index certification.',
   },
   {
@@ -147,6 +345,7 @@ export const mockProducts: Product[] = [
     brand: 'Bosch',
     category: 'Hardware',
     unit: '1 Full Kit',
+    imageUrl: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&auto=format&fit=crop&q=80',
     description: 'Versatile impact drill with reversing brush system and heavy duty masonry accessories.',
   },
 ];

@@ -59,6 +59,7 @@ export interface CartItem {
 }
 
 export interface DeliveryAddress {
+  id?: string;
   label: string;          // "Home" | "Site" | "Office"
   name: string;           // Recipient name
   phone: string;
@@ -66,6 +67,10 @@ export interface DeliveryAddress {
   line2?: string;
   city: string;
   pincode: string;
+  details?: string;
+  address?: string;
+  tag?: string;
+  deliveryTime?: string;
 }
 
 export interface Order {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
 import { mockProducts } from '../../services/mockData';
+import { customerService, mapBackendProductToProduct } from '../../services';
+import { useAppStore } from '../../store';
 import GradientAppHeader from '../../components/GradientAppHeader';
 
 const INITIAL_RECENT_SEARCHES = [
@@ -32,18 +35,46 @@ const POPULAR_SEARCHES = [
 export default function CustomerSearch({ navigation }: any) {
   const [searchQuery, setSearchQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState(INITIAL_RECENT_SEARCHES);
+  const [liveSearchResults, setLiveSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const { products } = useAppStore();
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setLiveSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const handler = setTimeout(() => {
+      customerService.unifiedSearch({ q: searchQuery }).then((res) => {
+        if (res.data?.products && Array.isArray(res.data.products)) {
+          setLiveSearchResults(res.data.products.map(mapBackendProductToProduct));
+        }
+      }).catch(() => {})
+      .finally(() => {
+        setIsSearching(false);
+      });
+    }, 250);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   const removeRecent = (term: string) => {
     setRecentSearches(recentSearches.filter((t) => t !== term));
   };
 
+  const productSource = products.length > 0 ? products : mockProducts;
   const filteredProducts = searchQuery.trim()
-    ? mockProducts.filter(
-        (p) =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? liveSearchResults.length > 0
+      ? liveSearchResults
+      : productSource.filter(
+          (p) =>
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.category.toLowerCase().includes(searchQuery.toLowerCase())
+        )
     : [];
 
   return (
@@ -120,9 +151,19 @@ export default function CustomerSearch({ navigation }: any) {
         ) : (
           /* Live Results List */
           <View style={styles.resultsSection}>
-            <Text style={styles.sectionTitle}>Results ({filteredProducts.length})</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+              <Text style={styles.sectionTitle}>Results ({filteredProducts.length})</Text>
+              {isSearching && <ActivityIndicator size="small" color={colors.primary} />}
+            </View>
 
-            {filteredProducts.length === 0 ? (
+            {isSearching && filteredProducts.length === 0 ? (
+              <View style={{ paddingVertical: spacing.xl, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ marginTop: spacing.sm, fontSize: typography.fontSizes.caption, color: colors.textSecondary }}>
+                  Searching materials catalog...
+                </Text>
+              </View>
+            ) : filteredProducts.length === 0 ? (
               <View style={styles.emptyBox}>
                 <Text style={styles.emptyIcon}>🔍</Text>
                 <Text style={styles.emptyTitle}>No materials found for "{searchQuery}"</Text>

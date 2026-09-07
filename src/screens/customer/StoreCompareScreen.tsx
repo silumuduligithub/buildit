@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
 import { mockStores, mockOffers, mockProducts } from '../../services/mockData';
+import { catalogService, mapBackendOfferToOffer } from '../../services';
 import { useAppStore } from '../../store';
 import { CartItem } from '../../types';
 import GradientAppHeader from '../../components/GradientAppHeader';
@@ -21,13 +22,40 @@ export default function StoreCompareScreen({ route, navigation }: any) {
   const [activeTab, setActiveTab] = useState('All Stores');
   const [selectedProductName, setSelectedProductName] = useState('');
   const [showAddSheet, setShowAddSheet] = useState(false);
+<<<<<<< HEAD
+=======
+  const [liveComparisonOffers, setLiveComparisonOffers] = useState<any[]>([]);
+>>>>>>> c2d4ce9 (api intigrated)
 
-  const { cart, addToCart, updateCartQuantity, removeFromCart } = useAppStore();
+  const {
+    cart,
+    addToCart,
+    updateCartQuantity,
+    removeFromCart,
+    syncAddToCart,
+    syncUpdateCartQuantity,
+    syncRemoveCartItem,
+    products,
+    retailers,
+    offers,
+  } = useAppStore();
 
-  const product = mockProducts.find((p) => p.id === productId) || mockProducts[0];
+  useEffect(() => {
+    catalogService.getProductOffers(productId).then((res) => {
+      if (res.data?.offers && Array.isArray(res.data.offers)) {
+        setLiveComparisonOffers(res.data.offers.map((o: any) => mapBackendOfferToOffer(o)));
+      }
+    }).catch(() => {});
+  }, [productId]);
 
-  const storeOffers = mockStores.map((store, index) => {
-    const basePrice = product.name.includes('UltraTech')
+  const product = products.find((p) => p.id === productId) || mockProducts.find((p) => p.id === productId) || mockProducts[0];
+  const storesList = retailers.length > 0 ? retailers : mockStores;
+
+  const storeOffers = storesList.map((store, index) => {
+    const matchedLiveOffer = liveComparisonOffers.find((o) => o.retailerId === store.id);
+    const basePrice = matchedLiveOffer
+      ? matchedLiveOffer.price
+      : product.name.includes('UltraTech')
       ? 410 + index * 3
       : product.name.includes('Ramco')
       ? 395 + index * 2
@@ -35,7 +63,7 @@ export default function StoreCompareScreen({ route, navigation }: any) {
       ? 405 + index * 3
       : 400 + index * 4;
 
-    const offer = mockOffers.find((o) => o.retailerId === store.id && o.productId === product.id) || {
+    const offer = matchedLiveOffer || offers.find((o) => o.retailerId === store.id && o.productId === product.id) || {
       id: `offer_${store.id}_${product.id}`,
       productId: product.id,
       retailerId: store.id,
@@ -60,11 +88,12 @@ export default function StoreCompareScreen({ route, navigation }: any) {
   });
 
   const getCartQuantity = (offerId: string) => {
-    const item = cart.find((i) => i.offer.id === offerId);
+    const item = cart.find((i) => i.offer.id === offerId || i.product.id === offerId);
     return item ? item.quantity : 0;
   };
 
   const handleAdd = (item: typeof storeOffers[0]) => {
+<<<<<<< HEAD
     const cartItem: CartItem = {
       id: `cart-${item.offer.id}-${Date.now()}`,
       offer: item.offer,
@@ -73,20 +102,30 @@ export default function StoreCompareScreen({ route, navigation }: any) {
       quantity: 1,
     };
     addToCart(cartItem);
+=======
+    syncAddToCart(product.id, item.offer.id, 1);
+>>>>>>> c2d4ce9 (api intigrated)
     setSelectedProductName(product.name);
     setShowAddSheet(true);
   };
 
   const handleIncrease = (offerId: string) => {
-    const item = cart.find((i) => i.offer.id === offerId);
-    if (item) updateCartQuantity(item.id, item.quantity + 1);
+    const item = cart.find((i) => i.offer.id === offerId || i.product.id === offerId);
+    if (item) {
+      syncUpdateCartQuantity(item.id, item.quantity + 1);
+    } else {
+      syncAddToCart(productId, offerId, 1);
+    }
   };
 
   const handleDecrease = (offerId: string) => {
-    const item = cart.find((i) => i.offer.id === offerId);
+    const item = cart.find((i) => i.offer.id === offerId || i.product.id === offerId);
     if (!item) return;
-    if (item.quantity <= 1) removeFromCart(item.id);
-    else updateCartQuantity(item.id, item.quantity - 1);
+    if (item.quantity <= 1) {
+      syncRemoveCartItem(item.id);
+    } else {
+      syncUpdateCartQuantity(item.id, item.quantity - 1);
+    }
   };
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,12 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Provider } from 'react-redux';
+import { store, initAuthThunk } from './src/redux';
 import { useAppStore } from './src/store';
 import { colors, spacing, typography, radii, shadows } from './src/theme/colors';
 import { UserRole } from './src/types';
@@ -17,6 +20,9 @@ import { UserRole } from './src/types';
 import CustomerNavigator from './src/navigation/CustomerNavigator';
 import RetailerNavigator from './src/navigation/RetailerNavigator';
 import DeliveryNavigator from './src/navigation/DeliveryNavigator';
+import LoginScreen from './src/screens/customer/LoginScreen';
+import { GlobalLoadingIndicator } from './src/components/ui/GlobalLoadingIndicator';
+import FlashMessage from './src/components/ui/FlashMessage';
 
 const ROLES: { id: UserRole; label: string; emoji: string; color: string }[] = [
   { id: 'customer', label: 'Customer', emoji: '🛒', color: colors.primary },
@@ -25,12 +31,30 @@ const ROLES: { id: UserRole; label: string; emoji: string; color: string }[] = [
 ];
 
 export default function App() {
-  const { currentRole, setCurrentRole } = useAppStore();
+  const { currentRole, setCurrentRole, initAuth, isAuthenticated, isAuthLoading } = useAppStore();
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
+
+  useEffect(() => {
+    initAuth();
+    store.dispatch(initAuthThunk());
+  }, []);
 
   const activeRole = ROLES.find((r) => r.id === currentRole)!;
 
   const renderNavigator = () => {
+    if (isAuthLoading) {
+      return (
+        <View style={styles.splashContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.splashText}>Restoring session...</Text>
+        </View>
+      );
+    }
+
+    if (!isAuthenticated) {
+      return <LoginScreen />;
+    }
+
     switch (currentRole) {
       case 'customer':   return <CustomerNavigator />;
       case 'retailer':   return <RetailerNavigator />;
@@ -39,21 +63,29 @@ export default function App() {
   };
 
   return (
-    <SafeAreaProvider>
-      <View style={styles.root}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor="transparent"
-          translucent
-        />
+    <Provider store={store}>
+      <SafeAreaProvider>
+        <View style={styles.root}>
+          <StatusBar
+            barStyle="light-content"
+            backgroundColor="transparent"
+            translucent
+          />
 
-        {/* Main Navigation Content */}
-        <View style={styles.content}>
-          <NavigationContainer>{renderNavigator()}</NavigationContainer>
-        </View>
+          {/* Global API Loader Indicator */}
+          <GlobalLoadingIndicator />
 
-      {/* Collapsible Floating Role Switcher Pill (Non-intrusive, never covers header) */}
-      <View style={styles.floatingRoleContainer}>
+          {/* Global Flash Message Banner */}
+          <FlashMessage />
+
+          {/* Main Navigation Content */}
+          <View style={styles.content}>
+            <NavigationContainer>{renderNavigator()}</NavigationContainer>
+          </View>
+
+        {/* Collapsible Floating Role Switcher Pill (Non-intrusive, only shown when authenticated) */}
+        {isAuthenticated && (
+          <View style={styles.floatingRoleContainer}>
         {showRoleSwitcher ? (
           <View style={styles.expandedRoleCard}>
             <View style={styles.roleHeaderRow}>
@@ -100,8 +132,10 @@ export default function App() {
           </TouchableOpacity>
         )}
         </View>
+        )}
       </View>
     </SafeAreaProvider>
+  </Provider>
   );
 }
 
@@ -115,8 +149,8 @@ const styles = StyleSheet.create({
   },
   floatingRoleContainer: {
     position: 'absolute',
-    bottom: 75,
-    left: spacing.md,
+    bottom: 140,
+    right: spacing.md,
     zIndex: 9999,
   },
   minimizedPill: {
@@ -201,5 +235,17 @@ const styles = StyleSheet.create({
   roleTextActive: {
     color: colors.white,
     fontWeight: typography.weights.extrabold,
+  },
+  splashContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+  },
+  splashText: {
+    fontSize: typography.fontSizes.bodySmall,
+    color: colors.textSecondary,
+    fontWeight: typography.weights.medium,
   },
 });

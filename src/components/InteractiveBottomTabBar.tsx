@@ -7,79 +7,37 @@ import {
   Platform,
 } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { colors, spacing, typography, radii, shadows } from '../theme/colors';
+import {
+  Home,
+  LayoutGrid,
+  ShoppingCart,
+  ClipboardList,
+  User,
+  Package,
+  BarChart3,
+  MoreHorizontal,
+  Truck,
+  Wallet,
+} from 'lucide-react-native';
+import { colors, typography, spacing, radii, shadows } from '../theme/colors';
 import { useAppStore } from '../store';
 
-const TAB_CONFIG: Record<
-  string,
-  { label: string; activeIcon: string; inactiveIcon: string; highlightColor: string }
-> = {
-  Home: {
-    label: 'Home',
-    activeIcon: '🏠',
-    inactiveIcon: '🏚️',
-    highlightColor: colors.primary,
-  },
-  Categories: {
-    label: 'Categories',
-    activeIcon: '🗂️',
-    inactiveIcon: '📁',
-    highlightColor: colors.primary,
-  },
-  Cart: {
-    label: 'Cart',
-    activeIcon: '🛒',
-    inactiveIcon: '🛍️',
-    highlightColor: colors.primary,
-  },
-  Orders: {
-    label: 'Orders',
-    activeIcon: '📋',
-    inactiveIcon: '📫',
-    highlightColor: colors.primary,
-  },
-  Inventory: {
-    label: 'Inventory',
-    activeIcon: '📦',
-    inactiveIcon: '📦',
-    highlightColor: colors.primary,
-  },
-  Analytics: {
-    label: 'Analytics',
-    activeIcon: '📊',
-    inactiveIcon: '📈',
-    highlightColor: colors.primary,
-  },
-  More: {
-    label: 'More',
-    activeIcon: '⋯',
-    inactiveIcon: '⋯',
-    highlightColor: colors.primary,
-  },
-  Account: {
-    label: 'Account',
-    activeIcon: '👤',
-    inactiveIcon: '👤',
-    highlightColor: colors.primary,
-  },
-  Deliveries: {
-    label: 'Deliveries',
-    activeIcon: '📋',
-    inactiveIcon: '📦',
-    highlightColor: '#FF6B00',
-  },
-  Earnings: {
-    label: 'Earnings',
-    activeIcon: '💲',
-    inactiveIcon: '👛',
-    highlightColor: '#FF6B00',
-  },
-  Profile: {
-    label: 'Profile',
-    activeIcon: '👤',
-    inactiveIcon: '👤',
-    highlightColor: '#FF6B00',
-  },
+type IconComponent = React.FC<{ size: number; color: string; strokeWidth: number }>;
+
+const TAB_CONFIG: Record<string, { label: string; Icon: IconComponent }> = {
+  Home: { label: 'Home', Icon: Home },
+  Categories: { label: 'Categories', Icon: LayoutGrid },
+  Cart: { label: 'Cart', Icon: ShoppingCart },
+  Orders: { label: 'Orders', Icon: ClipboardList },
+  Account: { label: 'Account', Icon: User },
+  // Retailer
+  Inventory: { label: 'Inventory', Icon: Package },
+  Analytics: { label: 'Analytics', Icon: BarChart3 },
+  More: { label: 'More', Icon: MoreHorizontal },
+  // Driver
+  Deliveries: { label: 'Deliveries', Icon: Truck },
+  Earnings: { label: 'Earnings', Icon: Wallet },
+  Profile: { label: 'Profile', Icon: User },
 };
 
 export default function InteractiveBottomTabBar({
@@ -87,20 +45,26 @@ export default function InteractiveBottomTabBar({
   descriptors,
   navigation,
 }: BottomTabBarProps) {
-  const { cart } = useAppStore();
+  const { cart, currentRole } = useAppStore();
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Role-based accent color
+  const accentColor =
+    currentRole === 'retailer'
+      ? colors.retailer
+      : currentRole === 'delivery'
+        ? colors.delivery
+        : colors.primary;
+
   return (
-    <View style={styles.dockWrapper}>
-      <View style={styles.tabDockContainer}>
+    <View style={styles.wrapper}>
+      <View style={styles.container}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
           const config = TAB_CONFIG[route.name] || {
             label: route.name,
-            activeIcon: '✨',
-            inactiveIcon: '✨',
-            highlightColor: colors.primary,
+            Icon: Home,
           };
 
           const onPress = () => {
@@ -109,65 +73,63 @@ export default function InteractiveBottomTabBar({
               target: route.key,
               canPreventDefault: true,
             });
-
             if (!isFocused && !event.defaultPrevented) {
               navigation.navigate(route.name);
             }
           };
 
           const onLongPress = () => {
-            navigation.emit({
-              type: 'tabLongPress',
-              target: route.key,
-            });
+            navigation.emit({ type: 'tabLongPress', target: route.key });
           };
 
           const isCartTab = route.name === 'Cart';
+          const iconColor = isFocused ? accentColor : colors.textTertiary;
 
           return (
             <TouchableOpacity
               key={route.key}
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel}
+              accessibilityLabel={config.label}
               testID={options.tabBarButtonTestID}
               onPress={onPress}
               onLongPress={onLongPress}
-              style={[styles.tabButton, isFocused && styles.tabButtonActive]}
-              activeOpacity={0.72}
+              style={styles.tabButton}
+              activeOpacity={0.7}
             >
-              {/* Active Background Glow Capsule */}
-              {isFocused && <View style={styles.activeCapsule} />}
-
-              {/* Icon Container with Badge */}
-              <View style={styles.iconWrapper}>
-                <Text style={[styles.tabEmoji, isFocused ? styles.tabEmojiActive : styles.tabEmojiInactive]}>
-                  {isFocused ? config.activeIcon : config.inactiveIcon}
-                </Text>
+              <View style={styles.iconContainer}>
+                <config.Icon
+                  size={22}
+                  color={iconColor}
+                  strokeWidth={isFocused ? 2 : 1.5}
+                />
 
                 {/* Cart Badge */}
                 {isCartTab && totalCartCount > 0 && (
-                  <View style={styles.cartBadge}>
-                    <Text style={styles.cartBadgeText}>
+                  <View style={[styles.badge, { backgroundColor: accentColor }]}>
+                    <Text style={styles.badgeText}>
                       {totalCartCount > 99 ? '99+' : totalCartCount}
                     </Text>
                   </View>
                 )}
               </View>
 
-              {/* Tab Title Label */}
               <Text
                 style={[
-                  styles.tabLabel,
-                  isFocused ? styles.tabLabelActive : styles.tabLabelInactive,
+                  styles.label,
+                  isFocused
+                    ? [styles.labelActive, { color: accentColor }]
+                    : styles.labelInactive,
                 ]}
                 numberOfLines={1}
               >
                 {config.label}
               </Text>
 
-              {/* Active Indicator Dot */}
-              {isFocused && <View style={styles.activeIndicatorDot} />}
+              {/* Active indicator line */}
+              {isFocused && (
+                <View style={[styles.activeIndicator, { backgroundColor: accentColor }]} />
+              )}
             </TouchableOpacity>
           );
         })}
@@ -177,104 +139,74 @@ export default function InteractiveBottomTabBar({
 }
 
 const styles = StyleSheet.create({
-  dockWrapper: {
-    backgroundColor: 'transparent',
+  wrapper: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    backgroundColor: 'transparent',
   },
-  tabDockContainer: {
+  container: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
-    paddingHorizontal: spacing.sm,
-    paddingTop: 6,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+    paddingHorizontal: spacing.xs,
+    paddingTop: spacing.sm,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    ...shadows.lg,
+    ...shadows.md,
   },
   tabButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     position: 'relative',
-    borderRadius: radii.lg,
+    minHeight: 48,
   },
-  tabButtonActive: {
-    transform: [{ scale: 1.05 }],
-  },
-  activeCapsule: {
-    position: 'absolute',
-    top: 2,
-    bottom: 2,
-    left: 4,
-    right: 4,
-    backgroundColor: '#FFF0F0',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: '#FFDCDC',
-  },
-  iconWrapper: {
-    width: 32,
-    height: 30,
+  iconContainer: {
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
-  tabEmoji: {
-    fontSize: 20,
-  },
-  tabEmojiActive: {
-    fontSize: 22,
-  },
-  tabEmojiInactive: {
-    opacity: 0.45,
-  },
-  cartBadge: {
+  badge: {
     position: 'absolute',
-    top: -3,
-    right: -8,
-    backgroundColor: colors.primary,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    top: -4,
+    right: -10,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
     borderWidth: 1.5,
-    borderColor: colors.white,
-    ...shadows.sm,
+    borderColor: colors.surface,
   },
-  cartBadgeText: {
+  badgeText: {
     color: colors.white,
     fontSize: 9,
-    fontWeight: typography.weights.extrabold,
+    fontWeight: typography.weights.bold,
+    lineHeight: 12,
   },
-  tabLabel: {
+  label: {
     fontSize: 10,
-    marginTop: 2,
+    marginTop: 3,
     textAlign: 'center',
   },
-  tabLabelActive: {
-    color: colors.primary,
-    fontWeight: typography.weights.extrabold,
-    letterSpacing: -0.1,
+  labelActive: {
+    fontWeight: typography.weights.semibold,
   },
-  tabLabelInactive: {
-    color: colors.textMuted,
-    fontWeight: typography.weights.medium,
+  labelInactive: {
+    color: colors.textTertiary,
+    fontWeight: typography.weights.regular,
   },
-  activeIndicatorDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.primary,
-    marginTop: 2,
+  activeIndicator: {
+    position: 'absolute',
+    top: 0,
+    width: 20,
+    height: 2,
+    borderRadius: 1,
   },
 });

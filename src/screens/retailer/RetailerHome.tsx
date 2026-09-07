@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,22 @@ import {
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import {
+  Store,
+  TrendingUp,
+  ClipboardList,
+  AlertTriangle,
+  Package,
+  Clock,
+  ChevronRight,
+  CheckCircle2,
+  XCircle,
+  Plus,
+  Truck,
+  DollarSign,
+  Layers,
+  MapPin,
+} from 'lucide-react-native';
 import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
 import { useAppStore } from '../../store';
 import NewOrderModal from '../../components/NewOrderModal';
@@ -21,23 +37,37 @@ export default function RetailerHome({ navigation }: any) {
     toggleStoreStatus,
     retailerProfile,
     orders,
-    products,
     offers,
     updateOrderStatus,
     newOrderNotification,
     setNewOrderNotification,
+    fetchOrders,
+    fetchRetailerOffers,
+    currentUser,
   } = useAppStore();
 
-  const activeOrders = orders.filter((o) => o.status !== 'delivered' && o.status !== 'rejected');
-  const pendingCount = orders.filter((o) => o.status === 'placed').length;
+  React.useEffect(() => {
+    fetchOrders().catch(() => {});
+    fetchRetailerOffers().catch(() => {});
+  }, []);
+
+  const activeOrders = orders.filter(
+    (o) => o.status !== 'delivered' && o.status !== 'rejected'
+  );
+  const pendingOrders = orders.filter((o) => o.status === 'placed');
   const completedOrders = orders.filter((o) => o.status === 'delivered');
-  const todaySales = completedOrders.reduce((sum, o) => sum + o.totalAmount, 0) + 38450;
-  const lowStockCount = offers.filter((o) => o.stock > 0 && o.stock <= 50).length || 3;
+  const todaySales =
+    completedOrders.reduce((sum, o) => sum + o.totalAmount, 0) + 38450;
+  const lowStockCount =
+    offers.filter((o) => o.stock > 0 && o.stock <= 50).length || 3;
 
   const handleAccept = (orderId: string) => {
     updateOrderStatus(orderId, 'confirmed');
     setNewOrderNotification(null);
-    Alert.alert('Order Accepted', `Order #${orderId} confirmed! Customer and delivery partner notified.`);
+    Alert.alert(
+      'Order Accepted',
+      `Order #${orderId} confirmed! Logistics partner notified for pickup.`
+    );
   };
 
   const handleReject = (orderId: string) => {
@@ -48,9 +78,9 @@ export default function RetailerHome({ navigation }: any) {
 
   return (
     <View style={styles.root}>
-      {/* ── 1. Signature Crimson Gradient Header ── */}
+      {/* ── Signature Retailer Gradient Header ── */}
       <LinearGradient
-        colors={['#140202', '#8B0000', '#D32F2F', '#E53935']}
+        colors={['#101924', '#1E293B', '#334155']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientHeader}
@@ -58,291 +88,277 @@ export default function RetailerHome({ navigation }: any) {
         <View style={styles.headerTopRow}>
           <View style={styles.storeInfoBox}>
             <View style={styles.storeLogoBox}>
-              <Text style={styles.storeLogoEmoji}>🏪</Text>
+              <Store size={22} color={colors.white} strokeWidth={2} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.storeNameText} numberOfLines={1}>
                 {retailerProfile.name || 'Sri Sai Hardware & Builders'}
               </Text>
-              <Text style={styles.storeLocationText} numberOfLines={1}>
-                📍 Kondapur Main Road, Hyderabad
-              </Text>
+              <View style={styles.locationRow}>
+                <MapPin size={12} color="rgba(255,255,255,0.7)" strokeWidth={1.8} />
+                <Text style={styles.storeLocationText} numberOfLines={1}>
+                  Kondapur Main Road, Hyderabad
+                </Text>
+              </View>
             </View>
           </View>
 
           {/* Store Open / Closed Switch */}
           <View style={styles.storeStatusPill}>
-            <View style={[styles.statusDot, { backgroundColor: isStoreOpen ? '#10B981' : '#EF4444' }]} />
-            <Text style={styles.statusText}>{isStoreOpen ? 'OPEN' : 'CLOSED'}</Text>
+            <View
+              style={[
+                styles.statusDot,
+                { backgroundColor: isStoreOpen ? '#10B981' : '#EF4444' },
+              ]}
+            />
+            <Text style={styles.statusText}>{isStoreOpen ? 'ONLINE' : 'OFFLINE'}</Text>
             <Switch
               value={isStoreOpen}
               onValueChange={toggleStoreStatus}
-              trackColor={{ false: '#4B5563', true: '#059669' }}
+              trackColor={{ false: '#475569', true: '#10B981' }}
               thumbColor={colors.white}
-              style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }}
+              style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
             />
           </View>
         </View>
       </LinearGradient>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* ── 2. Pending Orders Immediate Alert (If any) ── */}
-        {pendingCount > 0 && (
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* ── Pending Orders Alert Banner ── */}
+        {pendingOrders.length > 0 && (
           <TouchableOpacity
             style={styles.pendingAlertCard}
-            onPress={() => navigation.navigate('Orders', { screen: 'OrdersMain', params: { filter: 'New' } })}
+            onPress={() => navigation.navigate('Orders')}
             activeOpacity={0.88}
           >
             <View style={styles.pendingIconBox}>
-              <Text style={styles.pendingEmoji}>⚡</Text>
+              <Clock size={20} color={colors.white} strokeWidth={2.2} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.pendingTitle}>{pendingCount} New Order{pendingCount > 1 ? 's' : ''} Awaiting Acceptance!</Text>
-              <Text style={styles.pendingSub}>Tap to review items & dispatch to site</Text>
+              <Text style={styles.pendingTitle}>
+                {pendingOrders.length} New Order{pendingOrders.length > 1 ? 's' : ''}{' '}
+                Awaiting Acceptance!
+              </Text>
+              <Text style={styles.pendingSub}>
+                Accept within 10 mins to maintain high fulfillment rank
+              </Text>
             </View>
-            <Text style={styles.pendingArrow}>›</Text>
+            <ChevronRight size={18} color={colors.white} strokeWidth={2} />
           </TouchableOpacity>
         )}
 
-        {/* ── 3. Today's Key Metrics (4 Cards) ── */}
+        {/* ── Business Performance Metrics Grid ── */}
         <View style={styles.metricsGrid}>
-          {/* Today's Sales */}
           <View style={styles.metricCard}>
-            <View style={[styles.metricIconCircle, { backgroundColor: '#ECFDF5' }]}>
-              <Text style={{ fontSize: 18 }}>💰</Text>
+            <View style={styles.metricIconCircle}>
+              <TrendingUp size={18} color={colors.primary} strokeWidth={2} />
             </View>
+            <Text style={styles.metricValue}>
+              ₹{todaySales.toLocaleString('en-IN')}
+            </Text>
             <Text style={styles.metricLabel}>Today's Sales</Text>
-            <Text style={styles.metricValue}>₹{todaySales.toLocaleString('en-IN')}</Text>
-            <Text style={styles.metricTrend}>↑ 18.2% vs yesterday</Text>
           </View>
 
-          {/* Today's Orders */}
           <View style={styles.metricCard}>
-            <View style={[styles.metricIconCircle, { backgroundColor: '#EFF6FF' }]}>
-              <Text style={{ fontSize: 18 }}>🛍️</Text>
+            <View
+              style={[
+                styles.metricIconCircle,
+                { backgroundColor: 'rgba(59, 130, 246, 0.12)' },
+              ]}
+            >
+              <ClipboardList size={18} color="#2563EB" strokeWidth={2} />
             </View>
-            <Text style={styles.metricLabel}>Today's Orders</Text>
-            <Text style={styles.metricValue}>{orders.length + 14}</Text>
-            <Text style={styles.metricTrend}>4 Pending • 2 Active</Text>
+            <Text style={styles.metricValue}>{activeOrders.length}</Text>
+            <Text style={styles.metricLabel}>Active Orders</Text>
           </View>
 
-          {/* Total Catalog Items */}
           <View style={styles.metricCard}>
-            <View style={[styles.metricIconCircle, { backgroundColor: '#F3E8FF' }]}>
-              <Text style={{ fontSize: 18 }}>📦</Text>
+            <View
+              style={[
+                styles.metricIconCircle,
+                { backgroundColor: 'rgba(239, 68, 68, 0.12)' },
+              ]}
+            >
+              <AlertTriangle size={18} color="#DC2626" strokeWidth={2} />
             </View>
-            <Text style={styles.metricLabel}>Active Products</Text>
-            <Text style={styles.metricValue}>{products.length}</Text>
-            <Text style={styles.metricSubInfo}>Across 7 categories</Text>
-          </View>
-
-          {/* Low-Stock Alert */}
-          <TouchableOpacity
-            style={styles.metricCard}
-            onPress={() => navigation.navigate('Inventory', { screen: 'InventoryMain', params: { filter: 'Low Stock' } })}
-            activeOpacity={0.85}
-          >
-            <View style={[styles.metricIconCircle, { backgroundColor: '#FEF2F2' }]}>
-              <Text style={{ fontSize: 18 }}>⚠️</Text>
-            </View>
+            <Text style={styles.metricValue}>{lowStockCount}</Text>
             <Text style={styles.metricLabel}>Low Stock Items</Text>
-            <Text style={[styles.metricValue, { color: '#DC2626' }]}>{lowStockCount}</Text>
-            <Text style={styles.metricAlertLink}>Refill now ›</Text>
-          </TouchableOpacity>
+          </View>
+
+          <View style={styles.metricCard}>
+            <View
+              style={[
+                styles.metricIconCircle,
+                { backgroundColor: 'rgba(16, 185, 129, 0.12)' },
+              ]}
+            >
+              <CheckCircle2 size={18} color="#059669" strokeWidth={2} />
+            </View>
+            <Text style={styles.metricValue}>98.4%</Text>
+            <Text style={styles.metricLabel}>Fulfillment Rate</Text>
+          </View>
         </View>
 
-        {/* ── 4. Quick Actions ── */}
-        <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
-        <View style={styles.quickActionsRow}>
-          {/* Add Product */}
+        {/* ── Quick Actions Row ── */}
+        <Text style={styles.sectionHeading}>Store Management</Text>
+        <View style={styles.actionShortcutsRow}>
           <TouchableOpacity
             style={styles.actionBtn}
-            onPress={() => navigation.navigate('AddProduct')}
-            activeOpacity={0.82}
+            onPress={() => navigation.navigate('Inventory', { screen: 'AddProduct' })}
+            activeOpacity={0.8}
           >
-            <View style={[styles.actionIconBox, { backgroundColor: '#E0E7FF' }]}>
-              <Text style={styles.actionEmoji}>➕</Text>
+            <View style={styles.actionBtnIcon}>
+              <Plus size={20} color={colors.primary} strokeWidth={2} />
             </View>
-            <Text style={styles.actionLabel}>Add Product</Text>
+            <Text style={styles.actionBtnText}>Add Product</Text>
           </TouchableOpacity>
 
-          {/* Update Inventory */}
           <TouchableOpacity
             style={styles.actionBtn}
             onPress={() => navigation.navigate('Inventory')}
-            activeOpacity={0.82}
+            activeOpacity={0.8}
           >
-            <View style={[styles.actionIconBox, { backgroundColor: '#FEF3C7' }]}>
-              <Text style={styles.actionEmoji}>📦</Text>
+            <View style={styles.actionBtnIcon}>
+              <Package size={20} color={colors.primary} strokeWidth={2} />
             </View>
-            <Text style={styles.actionLabel}>Inventory</Text>
+            <Text style={styles.actionBtnText}>Manage Stock</Text>
           </TouchableOpacity>
 
-          {/* View Orders */}
           <TouchableOpacity
             style={styles.actionBtn}
-            onPress={() => navigation.navigate('Orders')}
-            activeOpacity={0.82}
+            onPress={() => navigation.navigate('Analytics')}
+            activeOpacity={0.8}
           >
-            <View style={[styles.actionIconBox, { backgroundColor: '#DCFCE7' }]}>
-              <Text style={styles.actionEmoji}>📋</Text>
+            <View style={styles.actionBtnIcon}>
+              <TrendingUp size={20} color={colors.primary} strokeWidth={2} />
             </View>
-            <Text style={styles.actionLabel}>View Orders</Text>
+            <Text style={styles.actionBtnText}>Insights</Text>
           </TouchableOpacity>
 
-          {/* Update Prices */}
           <TouchableOpacity
             style={styles.actionBtn}
-            onPress={() => navigation.navigate('Pricing')}
-            activeOpacity={0.82}
+            onPress={() => navigation.navigate('More')}
+            activeOpacity={0.8}
           >
-            <View style={[styles.actionIconBox, { backgroundColor: '#FCE7F3' }]}>
-              <Text style={styles.actionEmoji}>🏷️</Text>
+            <View style={styles.actionBtnIcon}>
+              <Truck size={20} color={colors.primary} strokeWidth={2} />
             </View>
-            <Text style={styles.actionLabel}>Update Prices</Text>
+            <Text style={styles.actionBtnText}>Fleet</Text>
           </TouchableOpacity>
         </View>
 
-        {/* ── 5. Active Operational Queue ── */}
-        <View style={styles.queueHeaderRow}>
-          <Text style={styles.sectionTitle}>ACTIVE ORDER FULFILLMENT ({activeOrders.length})</Text>
+        {/* ── Active Orders Pipeline ── */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeading}>Live Orders Queue</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Orders')}>
-            <Text style={styles.viewAllText}>View all ›</Text>
+            <Text style={styles.viewAllText}>View All ({orders.length}) →</Text>
           </TouchableOpacity>
         </View>
 
-        {activeOrders.map((order) => (
-          <View key={order.id} style={styles.orderCard}>
-            <View style={styles.orderTopRow}>
-              <View style={styles.orderIdBadge}>
-                <Text style={styles.orderIdText}>{order.id}</Text>
-              </View>
+        <View style={styles.ordersList}>
+          {activeOrders.slice(0, 3).map((order) => {
+            const isNew = order.status === 'placed';
+            return (
+              <View key={order.id} style={styles.orderCard}>
+                <View style={styles.orderCardHeader}>
+                  <View>
+                    <Text style={styles.orderId}>Order #{order.id}</Text>
+                    <Text style={styles.customerName}>
+                      {order.deliveryAddress?.name || 'Customer'} ·{' '}
+                      {order.items.length} items
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.orderBadge,
+                      isNew ? styles.orderBadgeNew : styles.orderBadgePreparing,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.orderBadgeText,
+                        isNew ? styles.orderBadgeTextNew : styles.orderBadgeTextPrep,
+                      ]}
+                    >
+                      {order.status.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
 
-              <View
-                style={[
-                  styles.statusTag,
-                  order.status === 'placed' && { backgroundColor: '#FEF3C7' },
-                  order.status === 'confirmed' && { backgroundColor: '#EFF6FF' },
-                  order.status === 'preparing' && { backgroundColor: '#F3E8FF' },
-                  order.status === 'ready' && { backgroundColor: '#ECFDF5' },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.statusTagText,
-                    order.status === 'placed' && { color: '#B45309' },
-                    order.status === 'confirmed' && { color: '#1D4ED8' },
-                    order.status === 'preparing' && { color: '#7E22CE' },
-                    order.status === 'ready' && { color: '#047857' },
-                  ]}
-                >
-                  {order.status === 'placed'
-                    ? 'WAITING CONFIRMATION'
-                    : order.status.toUpperCase()}
+                {/* Items preview */}
+                <Text style={styles.itemSummary} numberOfLines={1}>
+                  {order.items.map((i) => `${i.product.name} (x${i.quantity})`).join(', ')}
                 </Text>
+
+                <View style={styles.orderFooter}>
+                  <Text style={styles.orderTotal}>
+                    ₹{order.totalAmount.toLocaleString('en-IN')}
+                  </Text>
+
+                  {isNew ? (
+                    <View style={styles.orderActions}>
+                      <TouchableOpacity
+                        style={styles.declineBtn}
+                        onPress={() => handleReject(order.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.declineBtnText}>Decline</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.acceptBtn}
+                        onPress={() => handleAccept(order.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.acceptBtnText}>Accept</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.manageBtn}
+                      onPress={() => navigation.navigate('Orders')}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.manageBtnText}>Update Status →</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-            </View>
-
-            <View style={styles.orderCustomerRow}>
-              <Text style={styles.customerNameText}>👤 {order.deliveryAddress.name}</Text>
-              <Text style={styles.orderAmountText}>₹{order.totalAmount.toLocaleString('en-IN')}</Text>
-            </View>
-
-            <Text style={styles.itemsSummary} numberOfLines={1}>
-              {order.items.map((i) => `${i.product.name} (x${i.quantity})`).join(', ')}
-            </Text>
-
-            <Text style={styles.deliveryLocation} numberOfLines={1}>
-              📍 {order.deliveryAddress.line1}
-            </Text>
-
-            {/* Stage Progression Buttons */}
-            <View style={styles.orderCardActions}>
-              {order.status === 'placed' && (
-                <>
-                  <TouchableOpacity
-                    style={styles.rejectBtn}
-                    onPress={() => handleReject(order.id)}
-                  >
-                    <Text style={styles.rejectBtnText}>✕ Reject</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.acceptBtn}
-                    onPress={() => handleAccept(order.id)}
-                  >
-                    <Text style={styles.acceptBtnText}>✓ Accept Order</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-
-              {order.status === 'confirmed' && (
-                <TouchableOpacity
-                  style={styles.stageBtn}
-                  onPress={() => {
-                    updateOrderStatus(order.id, 'preparing');
-                    Alert.alert('Status Updated', 'Order marked as: Preparing in Warehouse');
-                  }}
-                >
-                  <Text style={styles.stageBtnText}>📦 Start Preparing Order →</Text>
-                </TouchableOpacity>
-              )}
-
-              {order.status === 'preparing' && (
-                <TouchableOpacity
-                  style={[styles.stageBtn, { backgroundColor: '#059669' }]}
-                  onPress={() => {
-                    updateOrderStatus(order.id, 'ready');
-                    Alert.alert('Status Updated', 'Order is ready! Delivery partner notified for pickup.');
-                  }}
-                >
-                  <Text style={styles.stageBtnText}>✓ Mark as Ready for Pickup →</Text>
-                </TouchableOpacity>
-              )}
-
-              {order.status === 'ready' && (
-                <TouchableOpacity
-                  style={[styles.stageBtn, { backgroundColor: '#2563EB' }]}
-                  onPress={() => {
-                    updateOrderStatus(order.id, 'out_for_delivery');
-                    Alert.alert('Dispatched', 'Handed over to delivery partner: Mahesh Kumar (🛵)');
-                  }}
-                >
-                  <Text style={styles.stageBtnText}>🚚 Dispatch with Driver →</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        ))}
+            );
+          })}
+        </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* ── New Order Instant Notification Modal ── */}
-      <NewOrderModal
-        visible={!!newOrderNotification}
-        order={newOrderNotification}
-        onAccept={handleAccept}
-        onReject={handleReject}
-        onClose={() => setNewOrderNotification(null)}
-      />
+      {/* New incoming order modal */}
+      {newOrderNotification && (
+        <NewOrderModal
+          visible={!!newOrderNotification}
+          order={newOrderNotification}
+          onClose={() => setNewOrderNotification(null)}
+          onAccept={() => handleAccept(newOrderNotification.id)}
+          onReject={() => handleReject(newOrderNotification.id)}
+        />
+      )}
     </View>
   );
 }
 
-const topInset = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 44;
+const TOP_INSET =
+  Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 48;
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: colors.background,
   },
   gradientHeader: {
-    paddingHorizontal: spacing.md,
-    paddingTop: topInset + 6,
-    paddingBottom: spacing.md + 4,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
-    ...shadows.md,
+    paddingTop: TOP_INSET,
+    paddingHorizontal: spacing.base,
+    paddingBottom: spacing.base,
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -352,43 +368,44 @@ const styles = StyleSheet.create({
   storeInfoBox: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
     flex: 1,
     marginRight: spacing.sm,
-    gap: spacing.sm,
   },
   storeLogoBox: {
     width: 42,
     height: 42,
     borderRadius: radii.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  storeLogoEmoji: {
-    fontSize: 22,
   },
   storeNameText: {
-    fontSize: typography.fontSizes.sm + 2,
-    fontWeight: typography.weights.extrabold,
+    fontSize: typography.fontSizes.body,
+    fontWeight: typography.weights.bold,
     color: colors.white,
   },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 2,
+  },
   storeLocationText: {
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 1,
+    fontSize: typography.fontSizes.caption,
+    color: 'rgba(255,255,255,0.7)',
   },
   storeStatusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    backgroundColor: 'rgba(0,0,0,0.35)',
     borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    paddingLeft: 10,
+    paddingRight: 4,
+    paddingVertical: 3,
     gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   statusDot: {
     width: 8,
@@ -396,249 +413,233 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statusText: {
-    color: colors.white,
     fontSize: 10,
-    fontWeight: typography.weights.extrabold,
+    fontWeight: typography.weights.bold,
+    color: colors.white,
+    letterSpacing: 0.5,
   },
+
   scrollContent: {
-    padding: spacing.md,
-    gap: spacing.md,
+    padding: spacing.base,
   },
+
+  // ── Pending Alert ──
   pendingAlertCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    padding: spacing.md,
+    backgroundColor: '#DC2626',
     borderRadius: radii.xl,
-    borderWidth: 1.5,
-    borderColor: '#F59E0B',
-    gap: spacing.sm,
-    ...shadows.sm,
+    padding: spacing.base,
+    gap: spacing.md,
+    marginBottom: spacing.base,
+    ...shadows.md,
   },
   pendingIconBox: {
     width: 38,
     height: 38,
-    borderRadius: radii.full,
-    backgroundColor: '#FDE68A',
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pendingEmoji: {
-    fontSize: 20,
-  },
   pendingTitle: {
-    fontSize: typography.fontSizes.xs + 1,
-    fontWeight: typography.weights.extrabold,
-    color: '#92400E',
+    fontSize: typography.fontSizes.bodySmall,
+    fontWeight: typography.weights.bold,
+    color: colors.white,
   },
   pendingSub: {
-    fontSize: 10,
-    color: '#B45309',
+    fontSize: typography.fontSizes.caption,
+    color: 'rgba(255,255,255,0.85)',
     marginTop: 1,
   },
-  pendingArrow: {
-    fontSize: 20,
-    color: '#92400E',
-    fontWeight: 'bold',
-  },
+
+  // ── Metrics ──
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   metricCard: {
     width: '48.5%',
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
     padding: spacing.md,
-    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.borderLight,
     ...shadows.sm,
   },
   metricIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: radii.md,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primaryFaded,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
-  metricLabel: {
-    fontSize: 10,
-    color: '#6B7280',
-    fontWeight: typography.weights.bold,
+    marginBottom: spacing.sm,
   },
   metricValue: {
-    fontSize: typography.fontSizes.lg,
-    fontWeight: typography.weights.extrabold,
-    color: '#111827',
+    fontSize: typography.fontSizes.h3,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  metricLabel: {
+    fontSize: typography.fontSizes.caption,
+    color: colors.textSecondary,
     marginTop: 2,
   },
-  metricTrend: {
-    fontSize: 9,
-    color: '#059669',
+
+  // ── Section ──
+  sectionHeading: {
+    fontSize: typography.fontSizes.body,
     fontWeight: typography.weights.bold,
-    marginTop: 4,
+    color: colors.text,
+    marginBottom: spacing.md,
   },
-  metricSubInfo: {
-    fontSize: 9,
-    color: '#9CA3AF',
-    marginTop: 4,
-  },
-  metricAlertLink: {
-    fontSize: 9,
-    color: '#DC2626',
-    fontWeight: typography.weights.extrabold,
-    marginTop: 4,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: typography.weights.extrabold,
-    color: '#6B7280',
-    letterSpacing: 0.6,
-  },
-  quickActionsRow: {
+  sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+  },
+  viewAllText: {
+    fontSize: typography.fontSizes.caption,
+    fontWeight: typography.weights.bold,
+    color: colors.primary,
+  },
+
+  // ── Action Shortcuts ──
+  actionShortcutsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
   },
   actionBtn: {
     width: '23%',
     alignItems: 'center',
+    gap: spacing.xs,
   },
-  actionIconBox: {
-    width: 52,
-    height: 52,
-    borderRadius: radii.xl,
+  actionBtnIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     ...shadows.sm,
   },
-  actionEmoji: {
-    fontSize: 22,
-  },
-  actionLabel: {
-    fontSize: 10,
-    fontWeight: typography.weights.bold,
-    color: '#374151',
+  actionBtnText: {
+    fontSize: typography.fontSizes.caption,
+    fontWeight: typography.weights.medium,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
-  queueHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  viewAllText: {
-    fontSize: typography.fontSizes.xs,
-    color: colors.primary,
-    fontWeight: typography.weights.extrabold,
+
+  // ── Orders List ──
+  ordersList: {
+    gap: spacing.sm,
   },
   orderCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderRadius: radii.xl,
-    padding: spacing.md,
+    padding: spacing.base,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    gap: spacing.xs + 2,
+    borderColor: colors.borderLight,
     ...shadows.sm,
   },
-  orderTopRow: {
+  orderCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    marginBottom: spacing.xs,
   },
-  orderIdBadge: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.xs,
-  },
-  orderIdText: {
-    fontSize: typography.fontSizes.xs,
-    fontWeight: typography.weights.extrabold,
-    color: '#1F2937',
-  },
-  statusTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.full,
-  },
-  statusTagText: {
-    fontSize: 9,
-    fontWeight: typography.weights.extrabold,
-    letterSpacing: 0.5,
-  },
-  orderCustomerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  customerNameText: {
-    fontSize: typography.fontSizes.sm,
+  orderId: {
+    fontSize: typography.fontSizes.bodySmall,
     fontWeight: typography.weights.bold,
-    color: '#111827',
+    color: colors.text,
   },
-  orderAmountText: {
-    fontSize: typography.fontSizes.md,
-    fontWeight: typography.weights.extrabold,
-    color: '#111827',
+  customerName: {
+    fontSize: typography.fontSizes.caption,
+    color: colors.textSecondary,
+    marginTop: 1,
   },
-  itemsSummary: {
-    fontSize: typography.fontSizes.xs,
-    color: '#4B5563',
+  orderBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.sm,
   },
-  deliveryLocation: {
+  orderBadgeNew: {
+    backgroundColor: '#FEF2F2',
+  },
+  orderBadgePreparing: {
+    backgroundColor: '#EFF6FF',
+  },
+  orderBadgeText: {
     fontSize: 10,
-    color: '#9CA3AF',
+    fontWeight: typography.weights.bold,
   },
-  orderCardActions: {
+  orderBadgeTextNew: {
+    color: '#DC2626',
+  },
+  orderBadgeTextPrep: {
+    color: '#2563EB',
+  },
+  itemSummary: {
+    fontSize: typography.fontSizes.caption,
+    color: colors.textTertiary,
+    marginVertical: spacing.xs,
+  },
+  orderFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  orderTotal: {
+    fontSize: typography.fontSizes.body,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  orderActions: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.xs,
-    paddingTop: spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
   },
-  rejectBtn: {
-    flex: 1,
-    backgroundColor: '#FEF2F2',
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    alignItems: 'center',
+  declineBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radii.sm,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: colors.border,
   },
-  rejectBtnText: {
-    color: '#DC2626',
-    fontSize: typography.fontSizes.xs,
-    fontWeight: typography.weights.bold,
+  declineBtnText: {
+    fontSize: typography.fontSizes.caption,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
   },
   acceptBtn: {
-    flex: 2,
-    backgroundColor: '#059669',
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    ...shadows.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: radii.sm,
+    backgroundColor: colors.success,
   },
   acceptBtnText: {
+    fontSize: typography.fontSizes.caption,
+    fontWeight: typography.weights.bold,
     color: colors.white,
-    fontSize: typography.fontSizes.xs,
-    fontWeight: typography.weights.extrabold,
   },
-  stageBtn: {
-    flex: 1,
-    backgroundColor: '#4F46E5',
-    paddingVertical: spacing.sm + 2,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    ...shadows.sm,
+  manageBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  stageBtnText: {
-    color: colors.white,
-    fontSize: typography.fontSizes.xs,
-    fontWeight: typography.weights.extrabold,
+  manageBtnText: {
+    fontSize: typography.fontSizes.caption,
+    fontWeight: typography.weights.bold,
+    color: colors.primary,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,37 +8,94 @@ import {
   SafeAreaView,
   StatusBar,
   TextInput,
+  Image,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors, spacing, typography, radii, shadows } from '../../theme/colors';
 import { useAppStore } from '../../store';
-import { mockStores } from '../../services/mockData';
+import { mockStores, mockOffers, mockProducts } from '../../services/mockData';
+import { customerService, mapBackendOfferToOffer, mapBackendProductToProduct } from '../../services';
 import { CartItem } from '../../types';
 import GradientAppHeader from '../../components/GradientAppHeader';
 import AddToCartBottomSheet from '../../components/AddToCartBottomSheet';
 
 export default function HardwareStoreDetail({ route, navigation }: any) {
   const storeId = route?.params?.storeId || 'r1';
-  const { products, offers, retailers, cart, addToCart, updateCartQuantity, removeFromCart } = useAppStore();
+  const {
+    products,
+    offers,
+    retailers,
+    cart,
+    addToCart,
+    updateCartQuantity,
+    removeFromCart,
+    syncAddToCart,
+    syncUpdateCartQuantity,
+    syncRemoveCartItem,
+  } = useAppStore();
+
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchMenu, setSearchMenu] = useState('');
   const [selectedProductName, setSelectedProductName] = useState('');
   const [showAddSheet, setShowAddSheet] = useState(false);
+<<<<<<< HEAD
+=======
+  const [liveStoreOffers, setLiveStoreOffers] = useState<any[]>([]);
+>>>>>>> c2d4ce9 (api intigrated)
 
-  const store: any = mockStores.find((s) => s.id === storeId) || mockStores[0];
+  const store: any =
+    retailers.find((s) => s.id === storeId) ||
+    mockStores.find((s) => s.id === storeId) ||
+    retailers[0] ||
+    mockStores[0];
 
-  // Store offers
-  const storeOffers = offers
-    .filter((o) => o.retailerId === store.id)
+  useEffect(() => {
+    customerService.getStoreDetails(storeId).then((res) => {
+      if (res.data?.products && Array.isArray(res.data.products) && res.data.products.length > 0) {
+        const mapped = res.data.products.map((p: any) => {
+          const product = mapBackendProductToProduct(p);
+          const offer = mapBackendOfferToOffer(p, store.id);
+          return {
+            ...offer,
+            product,
+          };
+        });
+        setLiveStoreOffers(mapped);
+      }
+    }).catch(() => {});
+  }, [storeId]);
+
+  // Store offers (from live API or store state)
+  const defaultStoreOffers = offers
+    .filter(
+      (o) =>
+        o.retailerId === store.id ||
+        (store.id === 's_sri_sai' && o.retailerId === 'r1') ||
+        (store.id === 'r1' && o.retailerId === 's_sri_sai')
+    )
     .map((o) => ({
       ...o,
       product: products.find((p) => p.id === o.productId),
     }))
     .filter((o) => o.product);
 
-  const categories = ['All', ...Array.from(new Set(storeOffers.map((o) => o.product?.category || 'Hardware')))];
+  const finalStoreOffers = React.useMemo(() => {
+    const liveMap = new Map<string, any>();
+    // First add local/custom store offers so newly added retailer products are prominently displayed
+    defaultStoreOffers.forEach((o) => {
+      if (o.product?.id) liveMap.set(o.product.id, o);
+    });
+    // Merge live API offers
+    liveStoreOffers.forEach((o) => {
+      if (o.product?.id) liveMap.set(o.product.id, o);
+    });
+    if (liveMap.size > 0) return Array.from(liveMap.values());
+    return defaultStoreOffers.length > 0 ? defaultStoreOffers : mockOffers.map((o) => ({ ...o, product: mockProducts[0] }));
+  }, [liveStoreOffers, defaultStoreOffers]);
 
-  const filteredOffers = storeOffers.filter((o) => {
+  const categories = ['All', ...Array.from(new Set(finalStoreOffers.map((o) => o.product?.category || 'Hardware')))];
+
+  const filteredOffers = finalStoreOffers.filter((o) => {
     const matchesCategory = activeCategory === 'All' || o.product?.category === activeCategory;
     const matchesSearch =
       searchMenu.length === 0 ||
@@ -48,10 +105,11 @@ export default function HardwareStoreDetail({ route, navigation }: any) {
   });
 
   const getCartQuantity = (offerId: string) => {
-    const item = cart.find((i) => i.offer.id === offerId);
+    const item = cart.find((i) => i.offer.id === offerId || i.product.id === offerId);
     return item ? item.quantity : 0;
   };
 
+<<<<<<< HEAD
   const handleAddItem = (offer: typeof storeOffers[0]) => {
     const newItem: CartItem = {
       id: `cart-${offer.id}-${Date.now()}`,
@@ -61,20 +119,31 @@ export default function HardwareStoreDetail({ route, navigation }: any) {
       quantity: 1,
     };
     addToCart(newItem);
+=======
+  const handleAddItem = (offer: any) => {
+    syncAddToCart(offer.product.id, offer.id, 1);
+>>>>>>> c2d4ce9 (api intigrated)
     setSelectedProductName(offer.product?.name || 'Product');
     setShowAddSheet(true);
   };
 
   const handleIncrease = (offerId: string) => {
-    const item = cart.find((i) => i.offer.id === offerId);
-    if (item) updateCartQuantity(item.id, item.quantity + 1);
+    const item = cart.find((i) => i.offer.id === offerId || i.product.id === offerId);
+    if (item) {
+      syncUpdateCartQuantity(item.id, item.quantity + 1);
+    } else {
+      syncAddToCart(offerId, offerId, 1);
+    }
   };
 
   const handleDecrease = (offerId: string) => {
-    const item = cart.find((i) => i.offer.id === offerId);
+    const item = cart.find((i) => i.offer.id === offerId || i.product.id === offerId);
     if (!item) return;
-    if (item.quantity <= 1) removeFromCart(item.id);
-    else updateCartQuantity(item.id, item.quantity - 1);
+    if (item.quantity <= 1) {
+      syncRemoveCartItem(item.id);
+    } else {
+      syncUpdateCartQuantity(item.id, item.quantity - 1);
+    }
   };
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -184,9 +253,20 @@ export default function HardwareStoreDetail({ route, navigation }: any) {
         {/* Items List (Swiggy / Zomato Menu Item Style) */}
         {filteredOffers.map((item) => {
           const qty = getCartQuantity(item.id);
+          const targetProductId = item.product?.id || item.productId || item.id;
+          const handleOpenDetails = () => {
+            if (targetProductId) {
+              navigation.navigate('ProductDetail', { productId: targetProductId });
+            }
+          };
+
           return (
             <View key={item.id} style={styles.menuItemCard}>
-              <View style={styles.menuItemLeft}>
+              <TouchableOpacity
+                style={styles.menuItemLeft}
+                activeOpacity={0.7}
+                onPress={handleOpenDetails}
+              >
                 {/* Hardware indicator icon (like veg/non-veg icon) */}
                 <View style={styles.hardwareIndicator}>
                   <View style={styles.hardwareIndicatorDot} />
@@ -201,20 +281,32 @@ export default function HardwareStoreDetail({ route, navigation }: any) {
                 <View style={styles.stockBadge}>
                   <Text style={styles.stockBadgeText}>In Stock: {item.stock} units</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
 
               <View style={styles.menuItemRight}>
-                <View style={styles.itemImageBox}>
-                  <Text style={styles.itemImageEmoji}>
-                    {item.product?.category === 'Power Tools' ? '🪚'
-                      : item.product?.category === 'Hand Tools' ? '🔨'
-                      : item.product?.category === 'Fasteners & Screws' ? '🔩'
-                      : item.product?.category === 'Door & Lock Fittings' ? '🔐'
-                      : item.product?.category === 'Plumbing Hardware' ? '🔧'
-                      : item.product?.category === 'Safety Gear' ? '🦺'
-                      : '⚡'}
-                  </Text>
-                </View>
+                <TouchableOpacity
+                  style={styles.itemImageBox}
+                  activeOpacity={0.7}
+                  onPress={handleOpenDetails}
+                >
+                  {item.product?.imageUrl ? (
+                    <Image
+                      source={{ uri: item.product.imageUrl }}
+                      style={styles.itemImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text style={styles.itemImageEmoji}>
+                      {item.product?.category === 'Power Tools' ? '🪚'
+                        : item.product?.category === 'Hand Tools' ? '🔨'
+                        : item.product?.category === 'Fasteners & Screws' ? '🔩'
+                        : item.product?.category === 'Door & Lock Fittings' ? '🔐'
+                        : item.product?.category === 'Plumbing Hardware' ? '🔧'
+                        : item.product?.category === 'Safety Gear' ? '🦺'
+                        : '⚡'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
 
                 {/* Swiggy / Zomato Floating + ADD Button on Image */}
                 <View style={styles.addButtonWrapper}>
@@ -591,6 +683,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.borderLight,
+    overflow: 'hidden',
+  },
+  itemImage: {
+    width: '100%',
+    height: '100%',
   },
   itemImageEmoji: {
     fontSize: 44,

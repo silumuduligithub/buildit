@@ -13,8 +13,12 @@ import { useAppStore } from '../../store';
 import GradientAppHeader from '../../components/GradientAppHeader';
 
 export default function RetailerPricing({ navigation }: any) {
-  const { products, offers, updateOfferPrice } = useAppStore();
+  const { products, offers, updateOfferPrice, syncUpdateOffer, fetchRetailerOffers } = useAppStore();
   const [editedPrices, setEditedPrices] = useState<Record<string, string>>({});
+
+  React.useEffect(() => {
+    fetchRetailerOffers().catch(() => {});
+  }, []);
 
   const handlePriceChange = (offerId: string, text: string) => {
     setEditedPrices({ ...editedPrices, [offerId]: text });
@@ -29,6 +33,7 @@ export default function RetailerPricing({ navigation }: any) {
       return;
     }
     updateOfferPrice(offerId, num);
+    syncUpdateOffer(offerId, { selling_price: num }).catch(() => {});
     Alert.alert('Price Updated', `New price: ₹${num}`);
   };
 

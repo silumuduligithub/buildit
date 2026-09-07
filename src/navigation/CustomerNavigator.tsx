@@ -21,6 +21,7 @@ import CustomerSearch from '../screens/customer/CustomerSearch';
 import AccountScreen from '../screens/customer/AccountScreen';
 import HardwareStoreDetail from '../screens/customer/HardwareStoreDetail';
 import CustomerStores from '../screens/customer/CustomerStores';
+import LoginScreen from '../screens/customer/LoginScreen';
 
 import InteractiveBottomTabBar from '../components/InteractiveBottomTabBar';
 
@@ -32,6 +33,7 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="HomeScreen">
       <Stack.Screen name="HomeScreen" component={CustomerHome} />
+      <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="LocationSelect" component={LocationSelection} />
       <Stack.Screen name="CategoryProducts" component={CategoryProducts} />
@@ -92,6 +94,7 @@ function AccountStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AccountMain" component={AccountScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="LocationSelect" component={LocationSelection} />
       <Stack.Screen name="Payment" component={PaymentScreen} />
       <Stack.Screen name="Offers" component={OffersScreen} />
